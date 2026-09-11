@@ -6,7 +6,7 @@
 
 ```toml
 [dependencies]
-chess-library = { git = "https://github.com/IndaPlus26/melkerme-task-3" }
+chess-library = { package = "melkerme-task-3", git = "https://github.com/IndaPlus26/melkerme-task-3" }
 ```
 
 [2] In your `main.rs` file, add the following:
@@ -31,17 +31,17 @@ let mut game = Game::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w
 [4] Get the possible moves for a piece:
 
 ```rust
-let moves = game.get_possible_moves(String::from("e2"));
+let moves = game.get_possible_moves(String::from("E2"));
 ```
 
 If there are no possible moves from the given square, the function will return a
 `None` option. Else it will return a vector of Strings representing the possible
-moves. Eg. `["e2e4", "e2e3"]`.
+`to` squares. Eg. `["E4", "E3"]`.
 
 [5] Make a move:
 
 ```rust
-let new_state = match game.make_move(String::from("e2"), String::from("e4")) {
+let new_state = match game.make_move(String::from("E2"), String::from("E4")) {
     Some(state) => state,
     None => /* invalid move handling */,
 };
@@ -49,7 +49,7 @@ game.set_game_state(new_state);
 ```
 
 If the move is invalid, the function will return a `None` GameState option and
-the game state will not be changed.
+nothing in the game state will be changed.
 
 [6] Get the game info:
 
@@ -58,28 +58,15 @@ let state = game.get_game_state(); // GameState::InProgress, GameState::Check, G
 ```
 
 ```rust
-let board = game.get_board(); // A 2D array of char representing the board. The characters are:
-                              - 'P' for white pawn
-                              - 'R' for white rook
-                              - 'N' for white knight
-                              - 'B' for white bishop
-                              - 'Q' for white queen
-                              - 'K' for white king
-                              - 'p' for black pawn
-                              - 'r' for black rook
-                              - 'n' for black knight
-                              - 'b' for black bishop
-                              - 'q' for black queen
-                              - 'k' for black king
-                              - '.' for empty square
+let board = game.get_board(); // A fen string representing the current board state.
 ```
 
 ```rust
-let turn_color = game.get_turn_color(); // "white" or "black"
+let turn_color = game.get_turn_color(); // Color::White or Color::Black
 ```
 
 ```rust
-let promotion_piece = game.get_promotion_piece(); // "queen", "rook", "bishop", "knight"
+let promotion_piece = game.get_promotion_piece(); // Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight
 ```
 
 ```rust

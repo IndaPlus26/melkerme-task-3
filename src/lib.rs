@@ -13,6 +13,21 @@ pub enum GameState {
     Stalemate,
     Draw,
 }
+
+pub enum Color {
+    White,
+    Black,
+}
+
+pub enum Piece {
+    Pawn,
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King,
+}
+
 pub struct Game {
     board: Board,
     state: GameState,
@@ -39,28 +54,20 @@ impl Game {
 
     /* 
      * Set what piece will be promoted to.
-     * @param piece: The piece to set the promotion piece to. 'Q' for queen, 'R' for rook, 'B' for bishop, 'N' for knight.
+     * @param piece: The piece to set the promotion piece to. Use the Piece enum.
+     * 
+     * NOTE!!! This will have to be set before the move is played.
+     * Detect if a move is a promotion move and make the user set the promotion piece before playing the move.
+     * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
      */
-    pub fn set_promotion(&mut self, piece: String) {
-        let promotion_piece = match piece.chars().nth(0) {
-            Some(piece) => {
-                if piece == 'Q' {
-                    piece::QUEEN
-                }
-                else if piece == 'R' {
-                    piece::ROOK
-                }
-                else if piece == 'B' {
-                    piece::BISHOP
-                }
-                else if piece == 'N' {
-                    piece::KNIGHT
-                }
-                else {
-                    piece::QUEEN
-                }
-            },
-            None => return,
+    pub fn set_promotion(&mut self, piece: Piece) {
+        let promotion_piece = match piece {
+            Piece::Queen => piece::QUEEN,
+            Piece::Rook => piece::ROOK,
+            Piece::Knight => piece::KNIGHT,
+            Piece::Bishop => piece::BISHOP,
+            Piece::King => piece::KING,
+            _ => piece::QUEEN,
         };
         self.board.set_promotion_piece(promotion_piece);
     }
@@ -75,86 +82,111 @@ impl Game {
     pub fn set_game_state(&mut self, state: GameState) { self.state = state; }
 
     /* 
-    * Get the board as a 2D array of characters.
-    * @return: A 2D array of characters representing the board.
-    *          The characters are:
-    *          - 'P' for white pawn
-    *          - 'R' for white rook
-    *          - 'N' for white knight
-    *          - 'B' for white bishop
-    *          - 'Q' for white queen
-    *          - 'K' for white king
-    *          - 'p' for black pawn
-    *          - 'r' for black rook
-    *          - 'n' for black knight
-    *          - 'b' for black bishop
-    *          - 'q' for black queen
-    *          - 'k' for black king
-    *          - '.' for empty square
+    * Get the board as a fen string.
     */
-    pub fn get_board(&self) -> [[char; 8]; 8] {
-        let mut board = [[0 as char; 8]; 8];
-        for i in 0..64 {
-            let piece = self.board.get_square(i);
-            let file = i % 8;
-            let rank = i / 8;
-            board[rank][file] = match piece {
-                piece::PAWN => { if piece == piece::WHITE { 'P' } else { 'p' } },
-                piece::ROOK => { if piece == piece::WHITE { 'R' } else { 'r' } },
-                piece::KNIGHT => { if piece == piece::WHITE { 'N' } else { 'n' } },
-                piece::BISHOP => { if piece == piece::WHITE { 'B' } else { 'b' } },
-                piece::QUEEN => { if piece == piece::WHITE { 'Q' } else { 'q' } },
-                piece::KING => { if piece == piece::WHITE { 'K' } else { 'k' } },
-                _ => '.',
+    pub fn to_fen(&self) -> String {
+        let mut fen = String::new();
+        let mut empty_count = 0;
+        for (i, square) in self.board.squares.iter().enumerate() {
+            let piece = piece::get_piece(*square);
+            let color = piece::get_color(*square);
+            if piece == 0 {
+                empty_count += 1;
+            } else {
+                if empty_count > 0 {
+                    fen += &format!("{}", empty_count);
+                    empty_count = 0;
+                }
+                fen += match piece {
+                    piece::PAWN => { if color == piece::WHITE { "P" } else { "p" } },
+                    piece::ROOK => { if color == piece::WHITE { "R" } else { "r" } },
+                    piece::KNIGHT => { if color == piece::WHITE { "N" } else { "n" } },
+                    piece::BISHOP => { if color == piece::WHITE { "B" } else { "b" } },
+                    piece::QUEEN => { if color == piece::WHITE { "Q" } else { "q" } },
+                    piece::KING => { if color == piece::WHITE { "K" } else { "k" } },
+                    _ => "",
+                };
+            }
+            if i % 8 == 7 {
+                if empty_count > 0 {
+                    fen += format!("{}", empty_count).as_str();
+                    empty_count = 0;
+                }
+                if i < 63 {
+                    fen += "/";
+                }
             }
         }
-        board
+        fen += if self.board.current_color_turn == piece::WHITE { " w " } else { " b " };
+        if self.board.get_castling_rights(0) {
+            fen += "K";
+        }
+        if self.board.get_castling_rights(1) {
+            fen += "Q";
+        }
+        if self.board.get_castling_rights(2) {
+            fen += "k";
+        }
+        if self.board.get_castling_rights(3) {
+            fen += "q";
+        }
+
+        if self.board.get_en_passant_square() != 64 {
+            fen += &format!(" {}", Board::from_index_to_square(self.board.get_en_passant_square()));
+        } else {
+            fen += " -";
+        }
+
+        fen += &format!(" {}", self.board.halfmove);
+        fen += &format!(" {}", self.board.fullmove);
+
+        fen
     }
+    
     /*
      * Get the color of the current turn.
-     * @return: "white" if the current turn is white, "black" if the current turn is black.
+     * @return: Color::White if the current turn is white, Color::Black if the current turn is black.
      */
-    pub fn get_turn_color(&self) -> String { if self.board.current_color_turn == piece::WHITE { String::from("white") } else { String::from("black") } }
+    pub fn get_turn_color(&self) -> Color { if self.board.current_color_turn == piece::WHITE { Color::White } else { Color::Black } }
+    
     /*
      * Get the promotion piece.
-     * @return: The promotion piece.
-     *          - "queen" for queen
-     *          - "rook" for rook
-     *          - "bishop" for bishop
-     *          - "knight" for knight
+     * @return: The promotion piece as a Piece enum.
      */
-    pub fn get_promotion_piece(&self) -> String { 
+    pub fn get_promotion_piece(&self) -> Piece { 
         match self.board.promotion_piece { 
-            piece::QUEEN => String::from("queen"),
-            piece::ROOK => String::from("rook"),
-            piece::BISHOP => String::from("bishop"),
-            piece::KNIGHT => String::from("knight"),
-            _ => String::from("queen"),
+            piece::QUEEN => Piece::Queen,
+            piece::ROOK => Piece::Rook,
+            piece::BISHOP => Piece::Bishop,
+            piece::KNIGHT => Piece::Knight,
+            _ => Piece::Queen,
         }
     }
+
     /*
      * Get the halfmove clock.
      * @return: The halfmove clock as a u32.
      */
     pub fn get_halfmove(&self) -> u32 { self.board.halfmove }
+
     /*
      * Get the fullmove clock.
      * @return: The fullmove clock as a u32.
      */
     pub fn get_fullmove(&self) -> u32 { self.board.fullmove }
 
-    /* 
+    /**
     * Get the possible moves for a given piece square.
-    * @param piece_square: The square of the piece to get the possible moves for. (e.g. "e4")
+    * @param piece_square: The square of the piece to get the possible moves for. (e.g. "E4")
     * @return: A vector of possible moves.
     */
     pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> { 
         let piece_file = match piece_square.chars().nth(0) {
             Some(file) => {
-                if file < 'a' || file > 'h' {
+                if file < 'A' || file > 'H' {
                     return None;
                 }
-                file as usize - 'a' as usize
+                file as usize - 'A' as usize
             },
             None => return None,
         };
@@ -163,7 +195,7 @@ impl Game {
                 if rank < '1' || rank > '8' {
                     return None;
                 }
-                rank as usize - '1' as usize
+                7 - (rank as usize - '1' as usize)
             },
             None => return None,
         };
@@ -173,9 +205,13 @@ impl Game {
             None => return None,
         };
 
-        let possible_moves = legal_moves.iter().filter(
-            |m| m.from == piece_rank * 8 + piece_file
-        ).map(|m| format!("{}", m)).collect();
+        let possible_moves = legal_moves.iter()
+        .filter(|m| m.from == piece_rank * 8 + piece_file)
+        .map(|m| format!("{}", m.to_string().split_off(2))).collect::<Vec<String>>();
+
+        if possible_moves.len() < 1 {
+            return None;
+        }
 
         return Some(possible_moves);
     }
@@ -199,56 +235,22 @@ impl Game {
         false
     }
 
-    /* 
+    /**
     * Make a move on the board.
     * @param from: The square to move from. (e.g. "e4")
     * @param to: The square to move to. (e.g. "e5")
     * @return: The new game state.
     */
-    pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> { 
-        let from_file = match from.chars().nth(0) {
-            Some(file) => {
-                if file < 'a' || file > 'h' {
-                    return None;
-                }
-                file as usize - 'a' as usize
-            },
-            None => return None,
-        };
-        let from_rank = match from.chars().nth(1) {
-            Some(rank) => {
-                if rank < '1' || rank > '8' {
-                    return None;
-                }
-                rank as usize - '1' as usize
-            },
-            None => return None,
-        };
-        let to_file = match to.chars().nth(0) {
-            Some(file) => {
-                if file < 'a' || file > 'h' {
-                    return None;
-                }
-                file as usize - 'a' as usize
-            },
-            None => return None,
-        };
-        let to_rank = match to.chars().nth(1) {
-            Some(rank) => {
-                if rank < '1' || rank > '8' {
-                    return None;
-                }
-                rank as usize - '1' as usize
-            },
-            None => return None,
-        };
+    pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> {
+        let from_index = Board::from_square_to_index(&from);
+        let to_index = Board::from_square_to_index(&to);
 
         let legal_moves = match self.board.get_legal_moves() {
             Some(moves) => moves,
             None => return None,
         };
         let possible_moves: Vec<&Move> = legal_moves.iter().filter(
-            |m| m.from == from_rank * 8 + from_file && m.to == to_rank * 8 + to_file
+            |m| m.from == from_index && m.to == to_index
         ).collect();
         
         let move_played: &Move;
@@ -279,6 +281,9 @@ impl Game {
         return Some(GameState::InProgress);
     }
 
+    /**
+    * Undo the last move made on the board if there is one in the history.
+     */
     pub fn undo_move(&mut self) {
         let Some((board, state)) = self.history.pop() else { return };
         self.board = board;
@@ -324,6 +329,7 @@ mod tests {
             ),
         ];
 
+        // for every case create 5 nested loops for a depth of 5
         for (case_index, (game, expected)) in cases.into_iter().enumerate() {
             let mut counts = [0usize; 5];
             let board = game.board;
@@ -370,12 +376,23 @@ mod tests {
         }
     }
 
-    fn test() {
-        let mut game = Game::new();
-        let new_state = match game.make_move(String::from("e2"), String::from("e4")) {
-            Some(state) => state,
-            None => game.get_game_state(),
-        };
-        game.set_game_state(new_state);
+    #[test]
+    fn test_from_index_to_square() {
+        assert_eq!(Board::from_index_to_square(0), "A8");
+        assert_eq!(Board::from_index_to_square(1), "B8");
+        assert_eq!(Board::from_index_to_square(63), "H1");
+    }
+
+    #[test]
+    fn test_from_square_to_index() {
+        assert_eq!(Board::from_square_to_index("A8"), 0);
+        assert_eq!(Board::from_square_to_index("B8"), 1);
+        assert_eq!(Board::from_square_to_index("H1"), 63);
+    }
+
+    #[test]
+    fn test_to_fen() {
+        let game = Game::new_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        assert_eq!(game.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
     }
 }

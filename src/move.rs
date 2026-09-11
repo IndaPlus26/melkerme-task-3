@@ -73,9 +73,9 @@ impl Move {
     }
 
     pub fn to_string(&self) -> String {
-        let from_file = (self.from % 8) as u8 + b'a';
+        let from_file = (self.from % 8) as u8 + b'A';
         let from_rank = 8 - (self.from / 8) as u8 + b'0';
-        let to_file = (self.to % 8) as u8 + b'a';
+        let to_file = (self.to % 8) as u8 + b'A';
         let to_rank = 8 - (self.to / 8) as u8 + b'0';
         format!("{}{}{}{}", char::from(from_file), char::from(from_rank), char::from(to_file), char::from(to_rank))
     }
