@@ -8,18 +8,25 @@ use r#move::Move;
 #[derive(Copy, Clone)]
 pub enum GameState {
     InProgress,
-    Check,
+    Quiet,
+    Captured,
+    Checked,
+    Promoted,
+    Castled,
     Checkmate,
     Stalemate,
     Draw,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Color {
     White,
     Black,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Piece {
+    Empty,
     Pawn,
     Rook,
     Knight,
@@ -266,7 +273,13 @@ impl Game {
         self.history.push((self.board, self.state));
         self.board.make_move(*move_played);
 
-        if self.board.is_in_check(None) { return Some(GameState::Check); }
+        let mut new_state = GameState::Quiet;
+
+        if self.board.is_in_check(None) { new_state = GameState::Checked; }
+        if move_played.is_capture() { new_state = GameState::Captured; }
+        if move_played.is_promotion() { new_state = GameState::Promoted; }
+        if move_played.is_castling() { new_state = GameState::Castled; }
+
         let has_legal_moves = match self.board.get_legal_moves() {
             Some(moves) => moves.len() > 0,
             None => false,
@@ -278,7 +291,7 @@ impl Game {
         if self.check_draw() {
             return Some(GameState::Draw);
         }
-        return Some(GameState::InProgress);
+        return Some(new_state);
     }
 
     /**
