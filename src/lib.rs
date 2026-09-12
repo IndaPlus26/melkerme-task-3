@@ -168,15 +168,14 @@ impl Game {
         };
         if self.board.get_castling_rights(0) {
             fen += "K";
-        }
-        if self.board.get_castling_rights(1) {
+        } else if self.board.get_castling_rights(1) {
             fen += "Q";
-        }
-        if self.board.get_castling_rights(2) {
+        } else if self.board.get_castling_rights(2) {
             fen += "k";
-        }
-        if self.board.get_castling_rights(3) {
+        } else if self.board.get_castling_rights(3) {
             fen += "q";
+        } else {
+            fen += "-";
         }
 
         if self.board.get_en_passant_square() != 64 {
