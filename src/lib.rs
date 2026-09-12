@@ -21,6 +21,7 @@ pub enum GameState {
     Stalemate,
     Draw,
     BotMove,
+    Resigned,
 }
 
 /// A color enum
