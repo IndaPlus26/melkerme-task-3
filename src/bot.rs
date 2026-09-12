@@ -96,7 +96,7 @@ fn quiescence_search(board: &Board, mut alpha: f32, beta: f32) -> f32 {
     alpha
 }
 
-fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
+pub fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
     let mut best_score = -f32::INFINITY;
     let mut best_move = None;
     let mut alpha = -f32::INFINITY;
