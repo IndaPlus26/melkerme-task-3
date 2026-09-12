@@ -323,8 +323,8 @@ impl Game {
         bot::play(&mut self.board);
     }
 
-    pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
-        bot::find_best_move(&mut self.board, depth)
+    pub fn find_best_move(&mut self, depth: u32, max_time: std::time::Duration) -> Option<Move> {
+        bot::find_best_move(&mut self.board, depth, max_time)
     }
 }
 

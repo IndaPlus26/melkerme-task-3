@@ -10,7 +10,7 @@ fn evaluate(board: &Board) -> f32 {
     let piece_values: HashMap<u8, f32> = HashMap::from([
         (piece::PAWN, 1.0),
         (piece::KNIGHT, 3.0),
-        (piece::BISHOP, 3.0),
+        (piece::BISHOP, 3.1),
         (piece::ROOK, 5.0),
         (piece::QUEEN, 9.0),
     ]);
@@ -88,6 +88,9 @@ fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
         if alpha >= beta {
             break;
         }
+        if std::time::Instant::now() > board.current_move_search_deadline {
+            break;
+        }
     }
 
     best_score
@@ -123,18 +126,25 @@ fn quiescence_search(board: &Board, max_depth: u32, mut alpha: f32, beta: f32) -
             return score;;
         }
         alpha = alpha.max(score);
+        if std::time::Instant::now() > board.current_move_search_deadline {
+            break;
+        }
     }
 
     alpha
 }
 
-pub fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
+pub fn find_best_move(board: &mut Board, depth: u32, max_time: std::time::Duration) -> Option<Move> {
     let mut best_score = -f32::INFINITY;
     let mut best_move = None;
     let mut alpha = -f32::INFINITY;
     let beta = f32::INFINITY;
 
+    board.current_move_search_deadline = std::time::Instant::now() + max_time;
     for m in board.get_legal_moves()? {
+        if best_move.is_none() {
+            best_move = Some(m);
+        }
         let mut new_board = *board;
         new_board.make_move(m);
         let score = -search(&new_board, depth - 1, -beta, -alpha);
@@ -147,13 +157,16 @@ pub fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
         if alpha >= beta {
             break;
         }
+        if std::time::Instant::now() > board.current_move_search_deadline {
+            break;
+        }
     }
 
     best_move
 }
     
 pub fn play(board: &mut Board) {
-    let best_move = find_best_move(&board, 4);
+    let best_move = find_best_move(board, 4, std::time::Duration::from_secs(5));
     match best_move {
         Some(m) => {
             board.make_move(m);
