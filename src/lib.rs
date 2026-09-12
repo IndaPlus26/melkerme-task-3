@@ -1,7 +1,7 @@
 mod board;
-mod piece;
 mod bot;
 mod r#move;
+mod piece;
 
 use board::Board;
 use r#move::Move;
@@ -79,13 +79,17 @@ impl Game {
     } */
 
     /// Get the game state.
-    pub fn get_game_state(&self) -> GameState { self.state }
-    
+    pub fn get_game_state(&self) -> GameState {
+        self.state
+    }
+
     /**
      * Set the game state.
      * @param state: The game state to set.
      */
-    pub fn set_game_state(&mut self, state: GameState) { self.state = state; }
+    pub fn set_game_state(&mut self, state: GameState) {
+        self.state = state;
+    }
 
     /// Get the current board state as a FEN string.
     pub fn to_fen(&self) -> String {
@@ -102,12 +106,48 @@ impl Game {
                     empty_count = 0;
                 }
                 fen += match piece {
-                    piece::PAWN => { if color == piece::WHITE { "P" } else { "p" } },
-                    piece::ROOK => { if color == piece::WHITE { "R" } else { "r" } },
-                    piece::KNIGHT => { if color == piece::WHITE { "N" } else { "n" } },
-                    piece::BISHOP => { if color == piece::WHITE { "B" } else { "b" } },
-                    piece::QUEEN => { if color == piece::WHITE { "Q" } else { "q" } },
-                    piece::KING => { if color == piece::WHITE { "K" } else { "k" } },
+                    piece::PAWN => {
+                        if color == piece::WHITE {
+                            "P"
+                        } else {
+                            "p"
+                        }
+                    }
+                    piece::ROOK => {
+                        if color == piece::WHITE {
+                            "R"
+                        } else {
+                            "r"
+                        }
+                    }
+                    piece::KNIGHT => {
+                        if color == piece::WHITE {
+                            "N"
+                        } else {
+                            "n"
+                        }
+                    }
+                    piece::BISHOP => {
+                        if color == piece::WHITE {
+                            "B"
+                        } else {
+                            "b"
+                        }
+                    }
+                    piece::QUEEN => {
+                        if color == piece::WHITE {
+                            "Q"
+                        } else {
+                            "q"
+                        }
+                    }
+                    piece::KING => {
+                        if color == piece::WHITE {
+                            "K"
+                        } else {
+                            "k"
+                        }
+                    }
                     _ => "",
                 };
             }
@@ -121,7 +161,11 @@ impl Game {
                 }
             }
         }
-        fen += if self.board.current_color_turn == piece::WHITE { " w " } else { " b " };
+        fen += if self.board.current_color_turn == piece::WHITE {
+            " w "
+        } else {
+            " b "
+        };
         if self.board.get_castling_rights(0) {
             fen += "K";
         }
@@ -136,7 +180,11 @@ impl Game {
         }
 
         if self.board.get_en_passant_square() != 64 {
-            fen += &format!(" {}", Board::from_index_to_square(self.board.get_en_passant_square()));
+            fen += &format!(
+                " {}{}",
+                ((self.board.get_en_passant_square() % 8) as u8 + b'a') as char,
+                ((7 - self.board.get_en_passant_square() / 8) as u8 + b'1') as char
+            );
         } else {
             fen += " -";
         }
@@ -146,25 +194,35 @@ impl Game {
 
         fen
     }
-    
+
     /**
      * Get the color of the current turn.
      * @return: Color::White if the current turn is white, Color::Black if the current turn is black.
      */
-    pub fn get_turn_color(&self) -> Color { if self.board.current_color_turn == piece::WHITE { Color::White } else { Color::Black } }
-    
+    pub fn get_turn_color(&self) -> Color {
+        if self.board.current_color_turn == piece::WHITE {
+            Color::White
+        } else {
+            Color::Black
+        }
+    }
+
     /**
      * Change the turn to the opposite color.
      */
     pub fn change_turn(&mut self) {
-        self.board.current_color_turn = if self.board.current_color_turn == piece::WHITE { piece::BLACK } else { piece::WHITE };
+        self.board.current_color_turn = if self.board.current_color_turn == piece::WHITE {
+            piece::BLACK
+        } else {
+            piece::WHITE
+        };
     }
     /**
      * Get the current promotion piece.
      * @return: The promotion piece as a Piece enum.
      */
-    pub fn get_promotion_piece(&self) -> Piece { 
-        match self.board.promotion_piece { 
+    pub fn get_promotion_piece(&self) -> Piece {
+        match self.board.promotion_piece {
             piece::QUEEN => Piece::Queen,
             piece::ROOK => Piece::Rook,
             piece::BISHOP => Piece::Bishop,
@@ -176,7 +234,7 @@ impl Game {
     /**
      * Set what piece will be promoted to.
      * @param piece: The piece to set the promotion piece to. Use the Piece enum.
-     * 
+     *
      * NOTE!!! This will have to be set before the move is played.
      * Make the user set the promotion piece before calling make_move().
      * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
@@ -194,26 +252,30 @@ impl Game {
     }
 
     // Get the halfmove clock/counter
-    pub fn get_halfmove(&self) -> u32 { self.board.halfmove }
+    pub fn get_halfmove(&self) -> u32 {
+        self.board.halfmove
+    }
 
     // Get the fullmove clock/counter
-    pub fn get_fullmove(&self) -> u32 { self.board.fullmove }
+    pub fn get_fullmove(&self) -> u32 {
+        self.board.fullmove
+    }
 
     /**
-    * Get the possible moves from a given square.
-    * @param piece_square: The `from` square of the piece to get the possible moves for. (e.g. "E4")
-    * @return: A vector of possible `to` squares as strings.
-    * example: get_possible_moves("E2") -> Some(vec!["E3", "E4"])
-    * example: get_possible_moves("E2") -> None (if there are no possible moves)
-    */
-    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> { 
+     * Get the possible moves from a given square.
+     * @param piece_square: The `from` square of the piece to get the possible moves for. (e.g. "E4")
+     * @return: A vector of possible `to` squares as strings.
+     * example: get_possible_moves("E2") -> Some(vec!["E3", "E4"])
+     * example: get_possible_moves("E2") -> None (if there are no possible moves)
+     */
+    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> {
         let piece_file = match piece_square.chars().nth(0) {
             Some(file) => {
                 if file < 'A' || file > 'H' {
                     return None;
                 }
                 file as usize - 'A' as usize
-            },
+            }
             None => return None,
         };
         let piece_rank = match piece_square.chars().nth(1) {
@@ -222,7 +284,7 @@ impl Game {
                     return None;
                 }
                 7 - (rank as usize - '1' as usize)
-            },
+            }
             None => return None,
         };
 
@@ -231,9 +293,11 @@ impl Game {
             None => return None,
         };
 
-        let possible_moves = legal_moves.iter()
-        .filter(|m| m.from == piece_rank * 8 + piece_file)
-        .map(|m| format!("{}", m.to_string().split_off(2))).collect::<Vec<String>>();
+        let possible_moves = legal_moves
+            .iter()
+            .filter(|m| m.from == piece_rank * 8 + piece_file)
+            .map(|m| format!("{}", m.to_string().split_off(2)))
+            .collect::<Vec<String>>();
 
         if possible_moves.len() < 1 {
             return None;
@@ -262,12 +326,12 @@ impl Game {
     }
 
     /**
-    * Make a move on the board.
-    * @param from: The square to move from. (e.g. "E4")
-    * @param to: The square to move to. (e.g. "E5")
-    * @return: The new game state.
-    * NOTE!!! The new game state is not set automatically, you must set it manually after calling this function.
-    */
+     * Make a move on the board.
+     * @param from: The square to move from. (e.g. "E4")
+     * @param to: The square to move to. (e.g. "E5")
+     * @return: The new game state.
+     * NOTE!!! The new game state is not set automatically, you must set it manually after calling this function.
+     */
     pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> {
         let from_index = Board::from_square_to_index(&from);
         let to_index = Board::from_square_to_index(&to);
@@ -280,16 +344,20 @@ impl Game {
             Some(moves) => moves,
             None => return None,
         };
-        let possible_moves: Vec<&Move> = legal_moves.iter().filter(
-            |m| m.from == from_index && m.to == to_index
-        ).collect();
-        
+        let possible_moves: Vec<&Move> = legal_moves
+            .iter()
+            .filter(|m| m.from == from_index && m.to == to_index)
+            .collect();
+
         let move_played: &Move;
         if possible_moves.len() < 1 {
             return None;
         } else if possible_moves.len() > 1 {
             let promotion_piece = self.board.get_promotion_piece();
-            move_played = possible_moves.into_iter().find(|m| m.get_promotion_piece() == promotion_piece).unwrap();
+            move_played = possible_moves
+                .into_iter()
+                .find(|m| m.get_promotion_piece() == promotion_piece)
+                .unwrap();
         } else {
             move_played = possible_moves.into_iter().next().unwrap();
         }
@@ -299,18 +367,29 @@ impl Game {
 
         let mut new_state = GameState::Quiet;
 
-        if self.board.is_in_check(None) { new_state = GameState::Checked; }
-        if move_played.is_capture() { new_state = GameState::Captured; }
-        if move_played.is_promotion() { new_state = GameState::Promoted; }
-        if move_played.is_castling() { new_state = GameState::Castled; }
+        if self.board.is_in_check(None) {
+            new_state = GameState::Checked;
+        }
+        if move_played.is_capture() {
+            new_state = GameState::Captured;
+        }
+        if move_played.is_promotion() {
+            new_state = GameState::Promoted;
+        }
+        if move_played.is_castling() {
+            new_state = GameState::Castled;
+        }
 
         let has_legal_moves = match self.board.get_legal_moves() {
             Some(moves) => moves.len() > 0,
             None => false,
         };
         if !has_legal_moves {
-            if self.board.is_in_check(None) { return Some(GameState::Checkmate); }
-            else { return Some(GameState::Stalemate); }
+            if self.board.is_in_check(None) {
+                return Some(GameState::Checkmate);
+            } else {
+                return Some(GameState::Stalemate);
+            }
         }
         if self.check_draw() {
             return Some(GameState::Draw);
@@ -321,7 +400,9 @@ impl Game {
     /// All moves made are stored in a vector.
     /// This function will undo the last move made.
     pub fn undo_move(&mut self) {
-        let Some((board, state)) = self.history.pop() else { return };
+        let Some((board, state)) = self.history.pop() else {
+            return;
+        };
         self.board = board;
         self.state = state;
     }
@@ -335,7 +416,6 @@ impl Game {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -343,10 +423,7 @@ mod tests {
     #[test]
     fn test_get_legal_move_count() {
         let cases = [
-            (
-                Game::new(),
-                [20, 400, 8902, 197281, 4865609],
-            ),
+            (Game::new(), [20, 400, 8902, 197281, 4865609]),
             (
                 Game::new_from_fen(
                     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
@@ -354,9 +431,7 @@ mod tests {
                 [48, 2039, 97862, 4085603, 193690690],
             ),
             (
-                Game::new_from_fen(
-                    "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
-                ),
+                Game::new_from_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"),
                 [14, 191, 2812, 43238, 674624],
             ),
             (
@@ -366,9 +441,7 @@ mod tests {
                 [6, 264, 9467, 422333, 15833292],
             ),
             (
-                Game::new_from_fen(
-                    "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
-                ),
+                Game::new_from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8"),
                 [44, 1486, 62379, 2103487, 89941194],
             ),
         ];
@@ -406,9 +479,7 @@ mod tests {
                 }
             }
 
-            for (index, (actual, expected)) in
-                counts.into_iter().zip(expected).enumerate()
-            {
+            for (index, (actual, expected)) in counts.into_iter().zip(expected).enumerate() {
                 assert_eq!(
                     actual,
                     expected,
@@ -436,8 +507,14 @@ mod tests {
 
     #[test]
     fn test_to_fen() {
-        let game = Game::new_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
-        assert_eq!(game.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        let game = Game::new_from_fen(
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq e3 0 1",
+        );
+        assert_eq!(game.board.get_en_passant_square(), 44);
+        assert_eq!(
+            game.to_fen(),
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq e3 0 1"
+        );
     }
 
     #[test]
