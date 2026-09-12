@@ -16,16 +16,44 @@ fn evaluate(board: &Board) -> f32 {
     ]);
 
     for i in 0..64 {
+        let mut piece_value = 0.0;
         let piece = board.get_square(i);
-        match piece::get_color(piece) {
+        let color = piece::get_color(piece);
+
+        match color {
             piece::WHITE => {
-                score += piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
+                piece_value += piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
             }
             piece::BLACK => {
-                score -= piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
+                piece_value -= piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
             }
             _ => {}
         }
+
+        let position_value = 0.5 - (i.abs_diff(31) as f32/ 31.0) * 0.5;
+        if color == piece::WHITE {
+            piece_value += position_value;
+        } else {
+            piece_value -= position_value;
+        }
+
+        if piece::get_piece(piece) == piece::KING {
+            if color == piece::WHITE {
+                piece_value -= position_value;
+
+                if i == 62 || i == 58 {
+                    piece_value += 0.75;
+                }
+            } else {
+                piece_value += position_value;
+
+                if i == 6 || i == 2 {
+                    piece_value -= 0.75;
+                }
+            }
+        }
+
+        score += piece_value;
     }
 
     if board.current_color_turn == piece::WHITE {
@@ -54,7 +82,7 @@ fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
     for m in legal_moves {
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -search(&new_board, depth - 1, -alpha, -beta);
+        let score = -search(&new_board, depth - 1, -beta, -alpha);
         best_score = best_score.max(score);
         alpha = alpha.max(best_score);
         if alpha >= beta {
@@ -105,7 +133,7 @@ pub fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
     for m in board.get_legal_moves()? {
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -search(&new_board, depth - 1, -alpha, -beta);
+        let score = -search(&new_board, depth - 1, -beta, -alpha);
         if score > best_score || best_move.is_none() {
             best_score = score;
             best_move = Some(m);
