@@ -44,14 +44,15 @@ impl Move {
         self.flags & DOUBLE_PAWN_PUSH != 0
     }
 
+    // The promotion piece is encoded in the first 3 bits of the flags
     pub fn get_promotion_piece(&self) -> u8 {
         if self.flags >> 5 == 0 {
             return piece::QUEEN;
-        } else if (self.flags >> 5) & 1 != 0 {
+        } else if (self.flags >> 5) & 0b1 != 0 {
             return piece::ROOK;
-        } else if (self.flags >> 5) & 2 != 0 {
+        } else if (self.flags >> 5) & 0b10 != 0 {
             return piece::BISHOP;
-        } else if (self.flags >> 5) & 4 != 0 {
+        } else if (self.flags >> 5) & 0b100 != 0 {
             return piece::KNIGHT;
         }
         return piece::QUEEN;
@@ -91,26 +92,31 @@ pub fn get_king_moves(board: &Board, pos: usize, moves: &mut Vec<Move>) {
     let king = board.get_square(pos);
 
     let offsets: [isize; 8] = [
-        -9, -8, -7, -1, 1, 7, 8, 9
+        -9, -8, -7, -1, 1, 7, 8, 9 // Up-left, up, up-right, left, right, down-left, down, down-right
     ];
     for offset in offsets {
         let new_pos = pos as isize + offset;
         if new_pos < 0 || new_pos >= 64 {
             continue;
         }
+        // No wrapping around the board
         if (new_pos as usize % 8).abs_diff(pos % 8) > 1 || (new_pos as usize / 8).abs_diff(pos / 8) > 1 {
             continue;
         }
+        // Check if the new square is occupied by a friendly piece
         if piece::get_color(board.get_square(new_pos as usize)) == piece::get_color(king) {
             continue;
         }
+        // Check if the new square is occupied by an enemy piece
         if piece::get_color(board.get_square(new_pos as usize)) != piece::get_color(king) && !piece::is_empty(board.get_square(new_pos as usize)) {
             moves.push(Move::new_with_flags(pos, new_pos as usize, CAPTURE));
             continue;
         }
+        // Quiet move
         moves.push(Move::new(pos, new_pos as usize));
     }
 
+    // Castling moves
     if pos == 4 {
         if board.get_castling_rights(crate::board::CASTLING_RIGHTS_BLACK_KING_SIDE) {
             moves.push(Move::new_with_flags(pos, pos + 2, CASTLING));
@@ -139,16 +145,20 @@ pub fn get_knight_moves(board: &Board, pos: usize, moves: &mut Vec<Move>) {
         if new_pos < 0 || new_pos >= 64 {
             continue;
         }
+        // No wrapping around the board
         if (new_pos as usize % 8).abs_diff(pos % 8) > 2 || (new_pos as usize / 8).abs_diff(pos / 8) > 2 {
             continue;
         }
+        // Check if the new square is occupied by a friendly piece
         if piece::get_color(board.get_square(new_pos as usize)) == piece::get_color(knight) {
             continue;
         }
+        // Check if the new square is occupied by an enemy piece
         if piece::get_color(board.get_square(new_pos as usize)) != piece::get_color(knight) && !piece::is_empty(board.get_square(new_pos as usize)) {
             moves.push(Move::new_with_flags(pos, new_pos as usize, CAPTURE));
             continue;
         }
+        // Quiet move
         moves.push(Move::new(pos, new_pos as usize));
     }
 }
@@ -159,18 +169,19 @@ pub fn get_pawn_moves(board: &Board, pos: usize, moves: &mut Vec<Move>) {
     let offset = if piece::get_color(pawn) == piece::WHITE { -8 } else { 8 };
     let new_pos = pos as isize + offset;
     if new_pos >= 0 && new_pos < 64 && piece::is_empty(board.get_square(new_pos as usize)) {
+        // Promotion moves no capture
         if new_pos / 8 == 7 || new_pos / 8 == 0 {
             moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION));
             moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION).set_promotion_piece(piece::ROOK));
             moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION).set_promotion_piece(piece::BISHOP));
             moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION).set_promotion_piece(piece::KNIGHT));
-
-            // moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION).set_promotion_piece(board.get_promotion_piece()));
         } else {
+            // Quiet move
             moves.push(Move::new(pos, new_pos as usize));
         }
     }
-    
+
+    // Double pawn push
     if (pos / 8 == 1 && piece::get_color(pawn) == piece::BLACK) || (pos / 8 == 6 && piece::get_color(pawn) == piece::WHITE) {
         let new_pos = pos as isize + offset * 2;
         let mid_pos = pos as isize + offset;
@@ -179,41 +190,45 @@ pub fn get_pawn_moves(board: &Board, pos: usize, moves: &mut Vec<Move>) {
         }
     }
 
+    // Pawn attacks
     let attack_offsets: [isize; 2] = if piece::get_color(pawn) == piece::WHITE { [-9, -7] } else { [9, 7] };
     for offset in attack_offsets {
         let new_pos = pos as isize + offset;
         if new_pos < 0 || new_pos >= 64 {
             continue;
         }
+        // No wrapping around the board
         if (new_pos as usize % 8).abs_diff(pos % 8) != 1 {
             continue;
         }
+        // Check if the new square is occupied by an enemy piece
         if !piece::is_empty(board.get_square(new_pos as usize)) && piece::get_color(board.get_square(new_pos as usize)) != piece::get_color(pawn) {
+            // Promotion moves with capture
             if new_pos / 8 == 7 || new_pos / 8 == 0 {
                 moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION | CAPTURE));
                 moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION | CAPTURE).set_promotion_piece(piece::ROOK));
                 moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION | CAPTURE).set_promotion_piece(piece::BISHOP));
                 moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION | CAPTURE).set_promotion_piece(piece::KNIGHT));
 
-                // moves.push(Move::new_with_flags(pos, new_pos as usize, PROMOTION | CAPTURE).set_promotion_piece(board.get_promotion_piece()));
-
             } else {
                 moves.push(Move::new_with_flags(pos, new_pos as usize, CAPTURE));
             }
         } else if new_pos as usize == board.get_en_passant_square() {
+            // EN PASSANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             moves.push(Move::new_with_flags(pos, new_pos as usize, EN_PASSANT | CAPTURE));
         } 
     }
 }
 
 pub fn get_sliding_moves(board: &Board, pos: usize, get_straights: bool, get_diagonals: bool, moves: &mut Vec<Move>) {
+    // You called this function but dont want moves in any direction???
     if !get_straights && !get_diagonals {
         return;
     }
     let piece = board.get_square(pos);
 
     let direction_offsets: [isize; 8] = [
-        -1, 1, -8, 8, -9, -7, 7, 9
+        -1, 1, -8, 8, -9, -7, 7, 9 // Left, right, up, down, up-left, up-right, down-left, down-right
     ];
     let to_edges: [usize; 4] = [
         pos % 8, //left
@@ -222,35 +237,41 @@ pub fn get_sliding_moves(board: &Board, pos: usize, get_straights: bool, get_dia
         7 - pos / 8, //bottom
     ];
     let length_to_check: [usize; 8] = [
-        to_edges[0],
-        to_edges[1],
-        to_edges[2],
-        to_edges[3],
-        to_edges[0].min(to_edges[2]),
-        to_edges[1].min(to_edges[2]),
-        to_edges[0].min(to_edges[3]),
-        to_edges[1].min(to_edges[3])
+        to_edges[0], // Left
+        to_edges[1], // Right
+        to_edges[2], // Up
+        to_edges[3], // Down
+        to_edges[0].min(to_edges[2]), // Up-left
+        to_edges[1].min(to_edges[2]), // Up-right
+        to_edges[0].min(to_edges[3]), // Down-left
+        to_edges[1].min(to_edges[3]) // Down-right
     ];
 
     for i in 0..length_to_check.len() {
+        // Skip the straight directions
         if i < 4 && !get_straights {
             continue;
         }
+        // Skip the diagonal directions
         if i >= 4 && !get_diagonals {
             continue;
         }
         for n in 0..length_to_check[i] {
-            let new_pos = pos as isize + direction_offsets[i] * ((n + 1) as isize); // Shoutout to Sebastian Lague for this formula. https://youtu.be/U4ogK0MIzqk?is=5VpqB7vtvDza2phT
+            // https://youtu.be/U4ogK0MIzqk?is=5VpqB7vtvDza2phT
+            let new_pos = pos as isize + direction_offsets[i] * ((n + 1) as isize);
             if new_pos < 0 || new_pos >= 64 {
                 break;
             }
+            // Check if the new square is occupied by a friendly piece
             if piece::get_color(board.get_square(new_pos as usize)) == piece::get_color(piece) {
                 break;
             }
+            // Check if the new square is occupied by an enemy piece
             if piece::get_color(board.get_square(new_pos as usize)) != piece::get_color(piece) && !piece::is_empty(board.get_square(new_pos as usize)) {
                 moves.push(Move::new_with_flags(pos, new_pos as usize, CAPTURE));
                 break;
             }
+            // Quiet move
             moves.push(Move::new(pos, new_pos as usize));
         }
     }

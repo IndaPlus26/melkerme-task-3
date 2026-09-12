@@ -8,10 +8,10 @@ pub const CASTLING_RIGHTS_BLACK_QUEEN_SIDE: usize = 3;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Board {
-    pub squares: [u8; 64],
+    pub squares: [u8; 64], // A8 = 0 top-left, H1 = 63 bottom-right, basically like the board is viewed from white's perspective
     pub current_color_turn: u8,
     castling_rights: [bool; 4],
-    en_passant_square: usize,
+    en_passant_square: usize, // 64 if no en passant square, otherwise the square of the pawn that can be captured en passant
     pub halfmove: u32,
     pub fullmove: u32,
     pub promotion_piece: u8,
@@ -147,6 +147,7 @@ impl Board {
     }
 
     pub fn is_in_check(&self, color: Option<u8>) -> bool {
+        // If no color is provided, use the current turn color
         let defending_color = match color {
             Some(color) => color,
             None => self.current_color_turn,
@@ -154,6 +155,7 @@ impl Board {
         let attacking_color = if defending_color == piece::WHITE { piece::BLACK } else { piece::WHITE };
         
         for i in 0..64 {
+            // Get king pos and check if attacked
             if self.get_square(i) == piece::create(piece::KING, defending_color) {
                 return self.is_square_controlled(i, attacking_color);
             }
@@ -161,6 +163,9 @@ impl Board {
         false
     }
     fn is_square_controlled(&self, square: usize, attacking_color: u8) -> bool {
+        // Move generation in reverse
+
+        // Pawn attacks
         let pawn_offsets = if attacking_color == piece::WHITE {
             [7, 9]
         } else {
@@ -175,6 +180,7 @@ impl Board {
             }
         }
 
+        // Knight attacks
         let knight_offsets = [-17, -15, -10, -6, 6, 10, 15, 17];
         for offset in knight_offsets {
             let new_square = square as isize + offset;
@@ -185,6 +191,7 @@ impl Board {
             }
         }
 
+        // Sliding piece attacks
         let direction_offsets: [isize; 8] = [
             -1, // Left
             1, // Right
@@ -211,23 +218,27 @@ impl Board {
             to_edges[0].min(to_edges[3]), // Down-left edge
             to_edges[1].min(to_edges[3]), // Down-right edge
         ];
-        for i in 0..8 {
-            for n in 0..length_to_edges[i] {
-                let new_square = square as isize + direction_offsets[i] * (n + 1) as isize;
+        for dir_index in 0..8 {
+            for n in 0..length_to_edges[dir_index] {
+
+                // This feels like magic but makes sense if you think about it
+                let new_square = square as isize + direction_offsets[dir_index] * (n + 1) as isize;
+
+                // Check if the new square is on the board
                 if new_square >= 0 && new_square < 64 {
                     let attacking_piece = self.get_square(new_square as usize);
                     if piece::is_empty(attacking_piece) {
-                        continue;
+                        continue; // This direction is not blocked by anything yet, keep checking
                     }
                     if piece::get_color(attacking_piece) != attacking_color {
-                        break;
+                        break; // Line of sight broken by friendly piece, exit
                     }
 
                     let attacking_piece = piece::get_piece(attacking_piece);
                     if attacking_piece == piece::QUEEN { return true }
-                    if attacking_piece == piece::ROOK && i < 4 { return true } // Striaghts are the first 4 directions
-                    if attacking_piece == piece::BISHOP && i >= 4 { return true } // Diagonals are the last 4 directions
-                    if attacking_piece == piece::KING && n == 0 { return true } // Only the first square in every direction
+                    if attacking_piece == piece::ROOK && dir_index < 4 { return true } // Striaghts are the first 4 directions
+                    if attacking_piece == piece::BISHOP && dir_index >= 4 { return true } // Diagonals are the last 4 directions
+                    if attacking_piece == piece::KING && n == 0 { return true } // King controls the closest square in every direction
                     break;
                 }
             }
@@ -340,7 +351,7 @@ impl Board {
                 }
             }
 
-            // General in check test
+            // General test for a check, this is could be improved but it's fast enough for now
             let mut test_board = *self;
             test_board.make_move(m);
             if !test_board.is_in_check(Some(self.current_color_turn)) {

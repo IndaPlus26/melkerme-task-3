@@ -6,8 +6,10 @@
 
 ```toml
 [dependencies]
-chess-library = { package = "melkerme-task-3", git = "https://github.com/IndaPlus26/melkerme-task-3" }
+chess-library = { package = "melkerme-task-3", git = "ssh://git@github.com/IndaPlus26/melkerme-task-3.git" }
 ```
+
+`If you have issues, make sure env.CARGO_NET_GIT_FETCH_WITH_CLI is set to true.`
 
 [2] In your `main.rs` file, add the following:
 

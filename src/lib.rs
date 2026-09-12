@@ -5,6 +5,9 @@ mod r#move;
 use board::Board;
 use r#move::Move;
 
+/// Enum for the game state.
+/// NOTE!!! The game state is updated **after** a move is made.
+/// For example, if a move is made and it results in a check, the game state will be updated to Checked.
 #[derive(Copy, Clone)]
 pub enum GameState {
     InProgress,
@@ -18,12 +21,14 @@ pub enum GameState {
     Draw,
 }
 
+/// A color enum
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Color {
     White,
     Black,
 }
 
+/// A piece enum
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Piece {
     Empty,
@@ -35,6 +40,7 @@ pub enum Piece {
     King,
 }
 
+/// The Game struct
 pub struct Game {
     board: Board,
     state: GameState,
@@ -42,7 +48,7 @@ pub struct Game {
 }
 
 impl Game {
-    /** Create a new game. */
+    /// Create a new game from the default starting position
     pub fn new() -> Self {
         Self {
             board: Board::create_default_position(),
@@ -51,6 +57,7 @@ impl Game {
         }
     }
 
+    /// Create a new game from a FEN string
     pub fn new_from_fen(fen: &str) -> Self {
         Self {
             board: Board::create_from_fen(fen),
@@ -59,38 +66,16 @@ impl Game {
         }
     }
 
-    /* 
-     * Set what piece will be promoted to.
-     * @param piece: The piece to set the promotion piece to. Use the Piece enum.
-     * 
-     * NOTE!!! This will have to be set before the move is played.
-     * Detect if a move is a promotion move and make the user set the promotion piece before playing the move.
-     * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
-     */
-    pub fn set_promotion(&mut self, piece: Piece) {
-        let promotion_piece = match piece {
-            Piece::Queen => piece::QUEEN,
-            Piece::Rook => piece::ROOK,
-            Piece::Knight => piece::KNIGHT,
-            Piece::Bishop => piece::BISHOP,
-            Piece::King => piece::KING,
-            _ => piece::QUEEN,
-        };
-        self.board.set_promotion_piece(promotion_piece);
-    }
-
-    /** Get the game state. */
+    /// Get the game state.
     pub fn get_game_state(&self) -> GameState { self.state }
     
-    /*
+    /**
      * Set the game state.
      * @param state: The game state to set.
      */
     pub fn set_game_state(&mut self, state: GameState) { self.state = state; }
 
-    /* 
-    * Get the board as a fen string.
-    */
+    /// Get the current board state as a FEN string.
     pub fn to_fen(&self) -> String {
         let mut fen = String::new();
         let mut empty_count = 0;
@@ -150,14 +135,14 @@ impl Game {
         fen
     }
     
-    /*
+    /**
      * Get the color of the current turn.
      * @return: Color::White if the current turn is white, Color::Black if the current turn is black.
      */
     pub fn get_turn_color(&self) -> Color { if self.board.current_color_turn == piece::WHITE { Color::White } else { Color::Black } }
     
-    /*
-     * Get the promotion piece.
+    /**
+     * Get the current promotion piece.
      * @return: The promotion piece as a Piece enum.
      */
     pub fn get_promotion_piece(&self) -> Piece { 
@@ -170,22 +155,38 @@ impl Game {
         }
     }
 
-    /*
-     * Get the halfmove clock.
-     * @return: The halfmove clock as a u32.
+    /**
+     * Set what piece will be promoted to.
+     * @param piece: The piece to set the promotion piece to. Use the Piece enum.
+     * 
+     * NOTE!!! This will have to be set before the move is played.
+     * Make the user set the promotion piece before calling make_move().
+     * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
      */
+    pub fn set_promotion(&mut self, piece: Piece) {
+        let promotion_piece = match piece {
+            Piece::Queen => piece::QUEEN,
+            Piece::Rook => piece::ROOK,
+            Piece::Knight => piece::KNIGHT,
+            Piece::Bishop => piece::BISHOP,
+            Piece::King => piece::KING,
+            _ => piece::QUEEN,
+        };
+        self.board.set_promotion_piece(promotion_piece);
+    }
+
+    // Get the halfmove clock/counter
     pub fn get_halfmove(&self) -> u32 { self.board.halfmove }
 
-    /*
-     * Get the fullmove clock.
-     * @return: The fullmove clock as a u32.
-     */
+    // Get the fullmove clock/counter
     pub fn get_fullmove(&self) -> u32 { self.board.fullmove }
 
     /**
-    * Get the possible moves for a given piece square.
-    * @param piece_square: The square of the piece to get the possible moves for. (e.g. "E4")
-    * @return: A vector of possible moves.
+    * Get the possible moves from a given square.
+    * @param piece_square: The `from` square of the piece to get the possible moves for. (e.g. "E4")
+    * @return: A vector of possible `to` squares as strings.
+    * example: get_possible_moves("E2") -> Some(vec!["E3", "E4"])
+    * example: get_possible_moves("E2") -> None (if there are no possible moves)
     */
     pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> { 
         let piece_file = match piece_square.chars().nth(0) {
@@ -244,9 +245,10 @@ impl Game {
 
     /**
     * Make a move on the board.
-    * @param from: The square to move from. (e.g. "e4")
-    * @param to: The square to move to. (e.g. "e5")
+    * @param from: The square to move from. (e.g. "E4")
+    * @param to: The square to move to. (e.g. "E5")
     * @return: The new game state.
+    * NOTE!!! The new game state is not set automatically, you must set it manually after calling this function.
     */
     pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> {
         let from_index = Board::from_square_to_index(&from);
@@ -294,9 +296,8 @@ impl Game {
         return Some(new_state);
     }
 
-    /**
-    * Undo the last move made on the board if there is one in the history.
-     */
+    /// All moves made are stored in a vector.
+    /// This function will undo the last move made.
     pub fn undo_move(&mut self) {
         let Some((board, state)) = self.history.pop() else { return };
         self.board = board;
