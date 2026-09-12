@@ -1,6 +1,6 @@
 mod board;
 mod piece;
-mod bot;
+pub mod bot;
 mod r#move;
 
 use board::Board;

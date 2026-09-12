@@ -121,7 +121,7 @@ pub fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
 }
     
 pub fn play(board: &mut Board) {
-    let best_move = find_best_move(&board, 2);
+    let best_move = find_best_move(&board, 4);
     match best_move {
         Some(m) => {
             board.make_move(m);
