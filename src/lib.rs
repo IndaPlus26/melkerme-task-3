@@ -366,9 +366,6 @@ impl Game {
 
         let mut new_state = GameState::Quiet;
 
-        if self.board.is_in_check(None) {
-            new_state = GameState::Checked;
-        }
         if move_played.is_capture() {
             new_state = GameState::Captured;
         }
@@ -377,6 +374,9 @@ impl Game {
         }
         if move_played.is_castling() {
             new_state = GameState::Castled;
+        }
+        if self.board.is_in_check(None) {
+            new_state = GameState::Checked;
         }
 
         let has_legal_moves = match self.board.get_legal_moves() {
