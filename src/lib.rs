@@ -1,6 +1,6 @@
 mod board;
 mod piece;
-pub mod bot;
+mod bot;
 mod r#move;
 
 use board::Board;
@@ -321,6 +321,10 @@ impl Game {
 
     pub fn make_bot_move(&mut self) {
         bot::play(&mut self.board);
+    }
+
+    pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
+        bot::find_best_move(&mut self.board, depth)
     }
 }
 
