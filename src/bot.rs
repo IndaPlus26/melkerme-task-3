@@ -1,0 +1,133 @@
+use std::collections::HashMap;
+
+use crate::board::Board;
+use crate::piece;
+use crate::r#move::Move;
+
+fn evaluate(board: &Board) -> f32 {
+    let mut score = 0.0;
+
+    let piece_values: HashMap<u8, f32> = HashMap::from([
+        (piece::PAWN, 1.0),
+        (piece::KNIGHT, 3.0),
+        (piece::BISHOP, 3.0),
+        (piece::ROOK, 5.0),
+        (piece::QUEEN, 9.0),
+    ]);
+
+    for i in 0..64 {
+        let piece = board.get_square(i);
+        match piece::get_color(piece) {
+            piece::WHITE => {
+                score += piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
+            }
+            piece::BLACK => {
+                score -= piece_values.get(&piece::get_piece(piece)).unwrap_or(&0.0);
+            }
+            _ => {}
+        }
+    }
+
+    if board.current_color_turn == piece::WHITE {
+        score
+    } else {
+        -score
+    }
+}
+
+fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
+    if depth == 0 {
+        return quiescence_search(board, alpha, beta);
+    }
+
+    let mut best_score = -f32::INFINITY;
+    let legal_moves = board.get_legal_moves().unwrap_or_default();
+    
+    if legal_moves.is_empty() {
+        if board.is_in_check(None) {
+            return best_score;
+        } else {
+            return 0.0;
+        }
+    }
+
+    for m in legal_moves {
+        let mut new_board = *board;
+        new_board.make_move(m);
+        let score = -search(&new_board, depth - 1, -alpha, -beta);
+        best_score = best_score.max(score);
+        alpha = alpha.max(best_score);
+        if alpha >= beta {
+            break;
+        }
+    }
+
+    best_score
+}
+
+fn quiescence_search(board: &Board, mut alpha: f32, beta: f32) -> f32 {
+    let legal_moves = board.get_legal_moves().unwrap_or_default();
+    let is_in_check = board.is_in_check(None);
+    if legal_moves.is_empty() {
+        return if is_in_check { -f32::INFINITY } else { 0.0 };
+    }
+
+    if !is_in_check {
+        let baseline = evaluate(board);
+        if baseline >= beta {
+            return baseline;
+        }
+        alpha = alpha.max(baseline);
+    }
+
+    for m in legal_moves {
+        if !is_in_check && !m.is_capture() {
+            continue;
+        }
+        let mut new_board = *board;
+        new_board.make_move(m);
+        let score = -quiescence_search(&new_board, -beta, -alpha);
+        if score >= beta {
+            return score;;
+        }
+        alpha = alpha.max(score);
+    }
+
+    alpha
+}
+
+fn find_best_move(board: &Board, depth: u32) -> Option<Move> {
+    let mut best_score = -f32::INFINITY;
+    let mut best_move = None;
+    let mut alpha = -f32::INFINITY;
+    let beta = f32::INFINITY;
+
+    for m in board.get_legal_moves()? {
+        let mut new_board = *board;
+        new_board.make_move(m);
+        let score = -search(&new_board, depth - 1, -alpha, -beta);
+        if score > best_score || best_move.is_none() {
+            best_score = score;
+            best_move = Some(m);
+        }
+
+        alpha = alpha.max(best_score);
+        if alpha >= beta {
+            break;
+        }
+    }
+
+    best_move
+}
+    
+pub fn play(board: &mut Board) {
+    let best_move = find_best_move(&board, 2);
+    match best_move {
+        Some(m) => {
+            println!("Best move: {}", m.to_string());
+        }
+        None => {
+            println!("No best move found");
+        }
+    }
+}

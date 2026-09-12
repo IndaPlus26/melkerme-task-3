@@ -1,5 +1,6 @@
 mod board;
 mod piece;
+mod bot;
 mod r#move;
 
 use board::Board;
@@ -19,6 +20,7 @@ pub enum GameState {
     Checkmate,
     Stalemate,
     Draw,
+    BotMove,
 }
 
 /// A color enum
@@ -65,6 +67,15 @@ impl Game {
             history: Vec::new(),
         }
     }
+
+    /* pub fn with_bot(mut self, color: Color) -> Self {
+        if color == Color::White {
+            self.bot_white = true;
+        } else {
+            self.bot_black = true;
+        }
+        self
+    } */
 
     /// Get the game state.
     pub fn get_game_state(&self) -> GameState { self.state }
@@ -254,6 +265,10 @@ impl Game {
         let from_index = Board::from_square_to_index(&from);
         let to_index = Board::from_square_to_index(&to);
 
+        if piece::get_color(self.board.get_square(from_index)) != self.board.current_color_turn {
+            return Some(GameState::InProgress);
+        }
+
         let legal_moves = match self.board.get_legal_moves() {
             Some(moves) => moves,
             None => return None,
@@ -302,6 +317,10 @@ impl Game {
         let Some((board, state)) = self.history.pop() else { return };
         self.board = board;
         self.state = state;
+    }
+
+    pub fn make_bot_move(&mut self) {
+        bot::play(&mut self.board);
     }
 }
 
@@ -408,5 +427,12 @@ mod tests {
     fn test_to_fen() {
         let game = Game::new_from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
         assert_eq!(game.to_fen(), "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+    }
+
+    #[test]
+    fn test_make_bot_move() {
+        let mut game = Game::new();
+        game.make_bot_move();
+        assert!(false);
     }
 }

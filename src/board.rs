@@ -254,24 +254,9 @@ impl Board {
                 continue;
             }
 
-            // Get king moves
-            if piece::get_piece(self.get_square(i)) == piece::KING {
-                get_king_moves(self, i, &mut moves);
-            }
-
-            // Get knight moves
-            if piece::get_piece(self.get_square(i)) == piece::KNIGHT {
-                get_knight_moves(self, i, &mut moves);
-            }
-
-            // Get pawn moves
-            if piece::get_piece(self.get_square(i)) == piece::PAWN {
-                get_pawn_moves(self, i, &mut moves);
-            }
-
-            // Get Bishop moves
-            if piece::get_piece(self.get_square(i)) == piece::BISHOP {
-                get_sliding_moves(self, i, false, true, &mut moves);
+            // Get Queen moves
+            if piece::get_piece(self.get_square(i)) == piece::QUEEN {
+                get_sliding_moves(self, i, true, true, &mut moves);
             }
 
             // Get Rook moves
@@ -279,9 +264,24 @@ impl Board {
                 get_sliding_moves(self, i, true, false, &mut moves);
             }
 
-            // Get Queen moves
-            if piece::get_piece(self.get_square(i)) == piece::QUEEN {
-                get_sliding_moves(self, i, true, true, &mut moves);
+            // Get Bishop moves
+            if piece::get_piece(self.get_square(i)) == piece::BISHOP {
+                get_sliding_moves(self, i, false, true, &mut moves);
+            }
+
+            // Get knight moves
+            if piece::get_piece(self.get_square(i)) == piece::KNIGHT {
+                get_knight_moves(self, i, &mut moves);
+            }
+
+            // Get king moves
+            if piece::get_piece(self.get_square(i)) == piece::KING {
+                get_king_moves(self, i, &mut moves);
+            }
+
+            // Get pawn moves
+            if piece::get_piece(self.get_square(i)) == piece::PAWN {
+                get_pawn_moves(self, i, &mut moves);
             }
         }
         Some(moves)
