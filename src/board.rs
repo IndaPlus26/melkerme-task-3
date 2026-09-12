@@ -15,8 +15,6 @@ pub struct Board {
     pub halfmove: u32,
     pub fullmove: u32,
     pub promotion_piece: u8,
-
-    pub current_move_search_deadline: std::time::Instant,
 }
 
 impl Board {
@@ -29,7 +27,6 @@ impl Board {
             halfmove: 0,
             fullmove: 0,
             promotion_piece: piece::QUEEN,
-            current_move_search_deadline: std::time::Instant::now(),
         }
     }
     pub fn create_from_fen(fen: &str) -> Self {

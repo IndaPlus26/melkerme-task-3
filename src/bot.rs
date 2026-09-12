@@ -4,6 +4,15 @@ use crate::board::Board;
 use crate::piece;
 use crate::r#move::Move;
 
+use std::time::{Instant, Duration};
+
+fn check_time(deadline: Instant) -> Result<(), u8> {
+    if Instant::now() > deadline {
+        return Err(1);
+    }
+    Ok(())
+}
+
 fn evaluate(board: &Board) -> f32 {
     let mut score = 0.0;
 
@@ -63,9 +72,10 @@ fn evaluate(board: &Board) -> f32 {
     }
 }
 
-fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
+fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32, deadline: Instant) -> Result<f32, u8> {
+    check_time(deadline)?;
     if depth == 0 {
-        return quiescence_search(board, 5, alpha, beta);
+        return quiescence_search(board, 5, alpha, beta, deadline);
     }
 
     let mut best_score = -f32::INFINITY;
@@ -73,65 +83,63 @@ fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
     
     if legal_moves.is_empty() {
         if board.is_in_check(None) {
-            return best_score;
+            return Ok(best_score);
         } else {
-            return 0.0;
+            return Ok(0.0);
         }
     }
 
     for m in legal_moves {
+        check_time(deadline)?;
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -search(&new_board, depth - 1, -beta, -alpha);
+        let score = -search(&new_board, depth - 1, -beta, -alpha, deadline)?;
         best_score = best_score.max(score);
         alpha = alpha.max(best_score);
         if alpha >= beta {
             break;
         }
-        if std::time::Instant::now() > board.current_move_search_deadline {
-            break;
-        }
     }
 
-    best_score
+    Ok(best_score)
 }
 
-fn quiescence_search(board: &Board, max_depth: u32, mut alpha: f32, beta: f32) -> f32 {
+fn quiescence_search(board: &Board, max_depth: u32, mut alpha: f32, beta: f32, deadline: Instant) -> Result<f32, u8> {
+    check_time(deadline)?;
+
     if max_depth == 0 {
-        return evaluate(board);
+        return Ok(evaluate(board));
     }
 
     let legal_moves = board.get_legal_moves().unwrap_or_default();
     let is_in_check = board.is_in_check(None);
     if legal_moves.is_empty() {
-        return if is_in_check { -f32::INFINITY } else { 0.0 };
+        return if is_in_check { Ok(-f32::INFINITY) } else { Ok(0.0) };
     }
 
     if !is_in_check {
         let baseline = evaluate(board);
         if baseline >= beta {
-            return baseline;
+            return Ok(baseline);
         }
         alpha = alpha.max(baseline);
     }
 
     for m in legal_moves {
+        check_time(deadline)?;
         if !is_in_check && !m.is_capture() {
             continue;
         }
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -quiescence_search(&new_board, max_depth - 1, -beta, -alpha);
+        let score = -quiescence_search(&new_board, max_depth - 1, -beta, -alpha, deadline)?;
         if score >= beta {
-            return score;;
+            return Ok(score);
         }
         alpha = alpha.max(score);
-        if std::time::Instant::now() > board.current_move_search_deadline {
-            break;
-        }
     }
 
-    alpha
+    Ok(alpha)
 }
 
 pub fn find_best_move(board: &mut Board, depth: u32, max_time: std::time::Duration) -> Option<Move> {
@@ -140,25 +148,35 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: std::time::Durati
     let mut alpha = -f32::INFINITY;
     let beta = f32::INFINITY;
 
-    board.current_move_search_deadline = std::time::Instant::now() + max_time;
-    for m in board.get_legal_moves()? {
-        if best_move.is_none() {
-            best_move = Some(m);
-        }
-        let mut new_board = *board;
-        new_board.make_move(m);
-        let score = -search(&new_board, depth - 1, -beta, -alpha);
-        if score > best_score || best_move.is_none() {
-            best_score = score;
-            best_move = Some(m);
-        }
+    let deadline = Instant::now() + max_time;
 
-        alpha = alpha.max(best_score);
-        if alpha >= beta {
-            break;
+    for d in 1..=depth {
+        for m in board.get_legal_moves().unwrap_or_default() {
+            if best_move.is_none() {
+                best_move = Some(m);
+            }
+            let mut new_board = *board;
+            new_board.make_move(m);
+            let score = match search(&new_board, d, -beta, -alpha, deadline) {
+                Ok(score) => -score,
+                Err(_) => {
+                    return best_move;
+                }
+            };
+            if score > best_score || best_move.is_none() {
+                best_score = score;
+                best_move = Some(m);
+            }
+            alpha = alpha.max(best_score);
+            if alpha >= beta {
+                break;
+            }
         }
-        if std::time::Instant::now() > board.current_move_search_deadline {
-            break;
+        match check_time(deadline) {
+            Ok(_) => {}
+            Err(_) => {
+                return best_move;
+            }
         }
     }
 
