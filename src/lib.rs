@@ -154,6 +154,12 @@ impl Game {
     pub fn get_turn_color(&self) -> Color { if self.board.current_color_turn == piece::WHITE { Color::White } else { Color::Black } }
     
     /**
+     * Change the turn to the opposite color.
+     */
+    pub fn change_turn(&mut self) {
+        self.board.current_color_turn = if self.board.current_color_turn == piece::WHITE { piece::BLACK } else { piece::WHITE };
+    }
+    /**
      * Get the current promotion piece.
      * @return: The promotion piece as a Piece enum.
      */
@@ -175,7 +181,7 @@ impl Game {
      * Make the user set the promotion piece before calling make_move().
      * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
      */
-    pub fn set_promotion(&mut self, piece: Piece) {
+    pub fn set_promotion_piece(&mut self, piece: Piece) {
         let promotion_piece = match piece {
             Piece::Queen => piece::QUEEN,
             Piece::Rook => piece::ROOK,
