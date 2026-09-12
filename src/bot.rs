@@ -124,10 +124,10 @@ pub fn play(board: &mut Board) {
     let best_move = find_best_move(&board, 2);
     match best_move {
         Some(m) => {
-            println!("Best move: {}", m.to_string());
+            board.make_move(m);
         }
         None => {
-            println!("No best move found");
+            return;
         }
     }
 }
