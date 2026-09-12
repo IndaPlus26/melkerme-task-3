@@ -65,7 +65,7 @@ fn evaluate(board: &Board) -> f32 {
 
 fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
     if depth == 0 {
-        return quiescence_search(board, alpha, beta);
+        return quiescence_search(board, 5, alpha, beta);
     }
 
     let mut best_score = -f32::INFINITY;
@@ -93,7 +93,11 @@ fn search(board: &Board, depth: u32, mut alpha: f32, beta: f32) -> f32 {
     best_score
 }
 
-fn quiescence_search(board: &Board, mut alpha: f32, beta: f32) -> f32 {
+fn quiescence_search(board: &Board, max_depth: u32, mut alpha: f32, beta: f32) -> f32 {
+    if max_depth == 0 {
+        return evaluate(board);
+    }
+
     let legal_moves = board.get_legal_moves().unwrap_or_default();
     let is_in_check = board.is_in_check(None);
     if legal_moves.is_empty() {
@@ -114,7 +118,7 @@ fn quiescence_search(board: &Board, mut alpha: f32, beta: f32) -> f32 {
         }
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -quiescence_search(&new_board, -beta, -alpha);
+        let score = -quiescence_search(&new_board, max_depth - 1, -beta, -alpha);
         if score >= beta {
             return score;;
         }

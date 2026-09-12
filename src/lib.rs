@@ -9,7 +9,7 @@ use r#move::Move;
 /// Enum for the game state.
 /// NOTE!!! The game state is updated **after** a move is made.
 /// For example, if a move is made and it results in a check, the game state will be updated to Checked.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
     InProgress,
     Quiet,
