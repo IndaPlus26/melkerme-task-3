@@ -522,4 +522,70 @@ mod tests {
         game.make_bot_move();
         assert!(false);
     }
+
+    #[test]
+    fn test_find_best_move() {
+        // 1
+        let mut game = Game::new_from_fen(
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        );
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 2
+        let mut game =
+            Game::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 3
+        let mut game = Game::new_from_fen(
+            "r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1",
+        );
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 4
+        let mut game = Game::new_from_fen("8/5pk1/6p1/3p4/3P4/5KP1/5P2/8 w - - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 5
+        let mut game = Game::new_from_fen("8/P6k/8/8/8/8/7p/4K3 w - - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 6 mate in 1
+        let mut game = Game::new_from_fen("7k/5Q2/6K1/8/8/8/8/8 w - - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 7 stalemate
+        let mut game = Game::new_from_fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_none());
+
+        // 8 in checkmate
+        let mut game = Game::new_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_none());
+
+        // 9 no e5d6
+        let mut game = Game::new_from_fen("k3r3/8/8/3pP3/8/8/8/4K3 w - d6 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+
+        // 10 dont castle king
+        let mut game = Game::new_from_fen("k4r2/8/8/8/8/8/8/4K2R w K - 0 1");
+        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
+        assert!(best_move.is_some());
+        println!("Best move: {}", best_move.unwrap().to_string());
+    }
 }

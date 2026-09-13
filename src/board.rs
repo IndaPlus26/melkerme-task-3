@@ -1,5 +1,7 @@
 use crate::r#move::{Move, get_king_moves, get_knight_moves, get_pawn_moves, get_sliding_moves};
 use crate::piece;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 pub const CASTLING_RIGHTS_WHITE_KING_SIDE: usize = 0;
 pub const CASTLING_RIGHTS_WHITE_QUEEN_SIDE: usize = 1;
@@ -276,7 +278,7 @@ impl Board {
 
         false
     }
-    fn get_pseudo_legal_moves(&self) -> Option<Vec<Move>> {
+    fn get_pseudo_legal_moves(&self, tactical_only: bool) -> Option<Vec<Move>> {
         let mut moves: Vec<Move> = Vec::with_capacity(64);
         for i in 0..64 {
             if piece::get_color(self.get_square(i)) != self.current_color_turn {
@@ -285,43 +287,47 @@ impl Board {
 
             // Get Queen moves
             if piece::get_piece(self.get_square(i)) == piece::QUEEN {
-                get_sliding_moves(self, i, true, true, &mut moves);
+                get_sliding_moves(self, i, true, true, &mut moves, tactical_only);
             }
 
             // Get Rook moves
             if piece::get_piece(self.get_square(i)) == piece::ROOK {
-                get_sliding_moves(self, i, true, false, &mut moves);
+                get_sliding_moves(self, i, true, false, &mut moves, tactical_only);
             }
 
             // Get Bishop moves
             if piece::get_piece(self.get_square(i)) == piece::BISHOP {
-                get_sliding_moves(self, i, false, true, &mut moves);
+                get_sliding_moves(self, i, false, true, &mut moves, tactical_only);
             }
 
             // Get knight moves
             if piece::get_piece(self.get_square(i)) == piece::KNIGHT {
-                get_knight_moves(self, i, &mut moves);
+                get_knight_moves(self, i, &mut moves, tactical_only);
             }
 
             // Get king moves
             if piece::get_piece(self.get_square(i)) == piece::KING {
-                get_king_moves(self, i, &mut moves);
+                get_king_moves(self, i, &mut moves, tactical_only);
             }
 
             // Get pawn moves
             if piece::get_piece(self.get_square(i)) == piece::PAWN {
-                get_pawn_moves(self, i, &mut moves);
+                get_pawn_moves(self, i, &mut moves, tactical_only);
             }
         }
         Some(moves)
     }
-    pub fn get_legal_moves(&self, color: Option<u8>) -> Option<Vec<Move>> {
+    pub fn collect_legal_moves(
+        &self,
+        color: Option<u8>,
+        stop_after_first: bool,
+    ) -> Option<Vec<Move>> {
         let mut new_board = *self;
         if color.is_some() && self.current_color_turn != color.unwrap() {
             new_board.swap_current_turn_color();
         }
 
-        let pseudo_legal_moves = new_board.get_pseudo_legal_moves();
+        let pseudo_legal_moves = new_board.get_pseudo_legal_moves(false);
         if pseudo_legal_moves.is_none() {
             return None;
         }
@@ -410,6 +416,9 @@ impl Board {
 
             if !test_board.is_in_check(Some(moving_color)) {
                 legal_moves.push(m);
+                if stop_after_first {
+                    return Some(legal_moves);
+                }
             }
         }
 
@@ -417,6 +426,27 @@ impl Board {
             return None;
         }
         Some(legal_moves)
+    }
+    pub fn get_legal_moves(&self, color: Option<u8>) -> Option<Vec<Move>> {
+        self.collect_legal_moves(color, false)
+    }
+    pub fn has_legal_moves(&self) -> bool {
+        self.collect_legal_moves(None, true).is_some()
+    }
+    pub fn get_legal_tactical_moves(&self) -> Vec<Move> {
+        let moving_color = self.current_color_turn;
+        let mut legal_moves = Vec::new();
+
+        for m in self.get_pseudo_legal_moves(true).unwrap_or_default() {
+            let mut test_board = *self;
+            test_board.make_move(m);
+
+            if !test_board.is_in_check(Some(moving_color)) {
+                legal_moves.push(m);
+            }
+        }
+
+        legal_moves
     }
     pub fn make_move(&mut self, move_played: Move) {
         self.set_square(move_played.to, self.get_square(move_played.from));
@@ -426,6 +456,17 @@ impl Board {
 
         self.set_en_passant_square(64);
         piece::post_move_update(self, move_played);
+    }
+
+    pub fn position_key(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+
+        self.squares.hash(&mut hasher);
+        self.current_color_turn.hash(&mut hasher);
+        self.castling_rights.hash(&mut hasher);
+        self.en_passant_square.hash(&mut hasher);
+
+        hasher.finish()
     }
 
     pub fn from_index_to_square(index: usize) -> String {
