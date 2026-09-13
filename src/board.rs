@@ -404,8 +404,11 @@ impl Board {
             }
 
             // General test for a check, this is could be improved but it's fast enough for now
-            new_board.make_move(m);
-            if !new_board.is_in_check(Some(new_board.current_color_turn)) {
+            let moving_color = new_board.current_color_turn;
+            let mut test_board = new_board;
+            test_board.make_move(m);
+
+            if !test_board.is_in_check(Some(moving_color)) {
                 legal_moves.push(m);
             }
         }
