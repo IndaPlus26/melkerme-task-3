@@ -287,7 +287,7 @@ impl Game {
             None => return None,
         };
 
-        let legal_moves = match self.board.get_legal_moves() {
+        let legal_moves = match self.board.get_legal_moves(None) {
             Some(moves) => moves,
             None => return None,
         };
@@ -339,7 +339,7 @@ impl Game {
             return Some(GameState::InProgress);
         }
 
-        let legal_moves = match self.board.get_legal_moves() {
+        let legal_moves = match self.board.get_legal_moves(None) {
             Some(moves) => moves,
             None => return None,
         };
@@ -379,7 +379,7 @@ impl Game {
             new_state = GameState::Checked;
         }
 
-        let has_legal_moves = match self.board.get_legal_moves() {
+        let has_legal_moves = match self.board.get_legal_moves(None) {
             Some(moves) => moves.len() > 0,
             None => false,
         };
@@ -450,27 +450,27 @@ mod tests {
             let mut counts = [0usize; 5];
             let board = game.board;
 
-            for m1 in board.get_legal_moves().into_iter().flatten() {
+            for m1 in board.get_legal_moves(None).into_iter().flatten() {
                 counts[0] += 1;
                 let mut b1 = board;
                 b1.make_move(m1);
 
-                for m2 in b1.get_legal_moves().into_iter().flatten() {
+                for m2 in b1.get_legal_moves(None).into_iter().flatten() {
                     counts[1] += 1;
                     let mut b2 = b1;
                     b2.make_move(m2);
 
-                    for m3 in b2.get_legal_moves().into_iter().flatten() {
+                    for m3 in b2.get_legal_moves(None).into_iter().flatten() {
                         counts[2] += 1;
                         let mut b3 = b2;
                         b3.make_move(m3);
 
-                        for m4 in b3.get_legal_moves().into_iter().flatten() {
+                        for m4 in b3.get_legal_moves(None).into_iter().flatten() {
                             counts[3] += 1;
                             let mut b4 = b3;
                             b4.make_move(m4);
 
-                            for _m5 in b4.get_legal_moves().into_iter().flatten() {
+                            for _m5 in b4.get_legal_moves(None).into_iter().flatten() {
                                 counts[4] += 1;
                             }
                         }

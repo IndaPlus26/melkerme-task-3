@@ -1,5 +1,5 @@
+use crate::r#move::{Move, get_king_moves, get_knight_moves, get_pawn_moves, get_sliding_moves};
 use crate::piece;
-use crate::r#move::{get_king_moves, get_knight_moves, get_pawn_moves, get_sliding_moves, Move};
 
 pub const CASTLING_RIGHTS_WHITE_KING_SIDE: usize = 0;
 pub const CASTLING_RIGHTS_WHITE_QUEEN_SIDE: usize = 1;
@@ -316,8 +316,8 @@ impl Board {
         Some(moves)
     }
     pub fn get_legal_moves(&self, color: Option<u8>) -> Option<Vec<Move>> {
-        let new_board: Board = *self;
-        if self.current_color_turn != color {
+        let mut new_board = *self;
+        if color.is_some() && self.current_color_turn != color.unwrap() {
             new_board.swap_current_turn_color();
         }
 
