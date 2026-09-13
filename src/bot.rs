@@ -174,7 +174,7 @@ fn search(
 ) -> Result<f32, u8> {
     check_time(deadline)?;
     if depth == 0 {
-        return quiescence_search(board, 5, alpha, beta, deadline);
+        return quiescence_search(board, alpha, beta, deadline);
     }
 
     let mut best_score = -f32::INFINITY;
@@ -205,16 +205,11 @@ fn search(
 
 fn quiescence_search(
     board: &Board,
-    max_depth: u32,
     mut alpha: f32,
     beta: f32,
     deadline: Instant,
 ) -> Result<f32, u8> {
     check_time(deadline)?;
-
-    if max_depth == 0 {
-        return Ok(evaluate(board));
-    }
 
     let legal_moves = board.get_legal_moves(None).unwrap_or_default();
     let is_in_check = board.is_in_check(None);
@@ -241,7 +236,7 @@ fn quiescence_search(
         }
         let mut new_board = *board;
         new_board.make_move(m);
-        let score = -quiescence_search(&new_board, max_depth - 1, -beta, -alpha, deadline)?;
+        let score = -quiescence_search(&new_board, -beta, -alpha, deadline)?;
         if score >= beta {
             return Ok(score);
         }
@@ -275,6 +270,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
             let score = match search(&new_board, d - 1, -beta, -alpha, deadline) {
                 Ok(score) => -score,
                 Err(_) => {
+                    println!("Timeout at depth {}", d);
                     return best_move;
                 }
             };
