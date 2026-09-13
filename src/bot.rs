@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::board::Board;
-use crate::r#move::Move;
 use crate::piece;
+use crate::r#move::Move;
 
 use std::time::{Duration, Instant};
 
@@ -528,7 +528,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
                         _ => "Search interrupted",
                     };
 
-                    println!("{} at depth {}", message, d);
+                    //println!("{} at depth {}", message, d);
                     return best_move;
                 }
             };
@@ -536,7 +536,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
                 best_score = score;
                 best_index = index;
                 if best_score == MATE_SCORE - 1.0 {
-                    return best_move;
+                    return Some(m);
                 }
             }
             alpha = alpha.max(best_score);
@@ -550,7 +550,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
         let seconds = started_at.elapsed().as_secs_f64();
         let total = stats.nodes + stats.qnodes;
 
-        println!(
+        /* println!(
             "Depth {} complete | score {:.3} | {:.2}s | nodes {} | qnodes {} | TT cutoffs {} | TT hits {} | TT depth ok {} | TT usable {} | {:.0} nodes/s",
             d,
             best_score,
@@ -562,7 +562,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
             stats.tt_depth_ok,
             stats.tt_usable,
             total as f64 / seconds.max(0.000_001),
-        );
+        ); */
 
         match check_time(deadline) {
             Ok(_) => {}
@@ -573,7 +573,7 @@ pub fn find_best_move(board: &mut Board, depth: u32, max_time: Duration) -> Opti
                     _ => "Search interrupted",
                 };
 
-                println!("{} at depth {}", message, d);
+                //println!("{} at depth {}", message, d);
                 return best_move;
             }
         }
