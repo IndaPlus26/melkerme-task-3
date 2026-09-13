@@ -315,8 +315,13 @@ impl Board {
         }
         Some(moves)
     }
-    pub fn get_legal_moves(&self) -> Option<Vec<Move>> {
-        let pseudo_legal_moves = self.get_pseudo_legal_moves();
+    pub fn get_legal_moves(&self, color: Option<u8>) -> Option<Vec<Move>> {
+        let new_board: Board = *self;
+        if self.current_color_turn != color {
+            new_board.swap_current_turn_color();
+        }
+
+        let pseudo_legal_moves = new_board.get_pseudo_legal_moves();
         if pseudo_legal_moves.is_none() {
             return None;
         }
@@ -326,71 +331,72 @@ impl Board {
             // More castling rules plus double checks
             if m.is_castling() {
                 if m.to == 62 {
-                    if !self.get_castling_rights(CASTLING_RIGHTS_WHITE_KING_SIDE) {
+                    if !new_board.get_castling_rights(CASTLING_RIGHTS_WHITE_KING_SIDE) {
                         continue;
                     }
-                    if self.get_square(63) != piece::create(piece::ROOK, piece::WHITE) {
+                    if new_board.get_square(63) != piece::create(piece::ROOK, piece::WHITE) {
                         continue;
                     }
-                    if !piece::is_empty(self.get_square(61))
-                        || !piece::is_empty(self.get_square(62))
+                    if !piece::is_empty(new_board.get_square(61))
+                        || !piece::is_empty(new_board.get_square(62))
                     {
                         continue;
                     }
-                    if self.is_square_controlled(61, piece::BLACK)
-                        || self.is_square_controlled(60, piece::BLACK)
+                    if new_board.is_square_controlled(61, piece::BLACK)
+                        || new_board.is_square_controlled(60, piece::BLACK)
                     {
                         continue;
                     }
                 } else if m.to == 58 {
-                    if !self.get_castling_rights(CASTLING_RIGHTS_WHITE_QUEEN_SIDE) {
+                    if !new_board.get_castling_rights(CASTLING_RIGHTS_WHITE_QUEEN_SIDE) {
                         continue;
                     }
-                    if self.get_square(56) != piece::create(piece::ROOK, piece::WHITE) {
+                    if new_board.get_square(56) != piece::create(piece::ROOK, piece::WHITE) {
                         continue;
                     }
-                    if !piece::is_empty(self.get_square(59))
-                        || !piece::is_empty(self.get_square(58))
-                        || !piece::is_empty(self.get_square(57))
+                    if !piece::is_empty(new_board.get_square(59))
+                        || !piece::is_empty(new_board.get_square(58))
+                        || !piece::is_empty(new_board.get_square(57))
                     {
                         continue;
                     }
-                    if self.is_square_controlled(59, piece::BLACK)
-                        || self.is_square_controlled(60, piece::BLACK)
+                    if new_board.is_square_controlled(59, piece::BLACK)
+                        || new_board.is_square_controlled(60, piece::BLACK)
                     {
                         continue;
                     }
                 } else if m.to == 6 {
-                    if !self.get_castling_rights(CASTLING_RIGHTS_BLACK_KING_SIDE) {
+                    if !new_board.get_castling_rights(CASTLING_RIGHTS_BLACK_KING_SIDE) {
                         continue;
                     }
-                    if self.get_square(7) != piece::create(piece::ROOK, piece::BLACK) {
+                    if new_board.get_square(7) != piece::create(piece::ROOK, piece::BLACK) {
                         continue;
                     }
-                    if !piece::is_empty(self.get_square(5)) || !piece::is_empty(self.get_square(6))
+                    if !piece::is_empty(new_board.get_square(5))
+                        || !piece::is_empty(new_board.get_square(6))
                     {
                         continue;
                     }
-                    if self.is_square_controlled(5, piece::WHITE)
-                        || self.is_square_controlled(4, piece::WHITE)
+                    if new_board.is_square_controlled(5, piece::WHITE)
+                        || new_board.is_square_controlled(4, piece::WHITE)
                     {
                         continue;
                     }
                 } else if m.to == 2 {
-                    if !self.get_castling_rights(CASTLING_RIGHTS_BLACK_QUEEN_SIDE) {
+                    if !new_board.get_castling_rights(CASTLING_RIGHTS_BLACK_QUEEN_SIDE) {
                         continue;
                     }
-                    if self.get_square(0) != piece::create(piece::ROOK, piece::BLACK) {
+                    if new_board.get_square(0) != piece::create(piece::ROOK, piece::BLACK) {
                         continue;
                     }
-                    if !piece::is_empty(self.get_square(3))
-                        || !piece::is_empty(self.get_square(2))
-                        || !piece::is_empty(self.get_square(1))
+                    if !piece::is_empty(new_board.get_square(3))
+                        || !piece::is_empty(new_board.get_square(2))
+                        || !piece::is_empty(new_board.get_square(1))
                     {
                         continue;
                     }
-                    if self.is_square_controlled(3, piece::WHITE)
-                        || self.is_square_controlled(4, piece::WHITE)
+                    if new_board.is_square_controlled(3, piece::WHITE)
+                        || new_board.is_square_controlled(4, piece::WHITE)
                     {
                         continue;
                     }
@@ -398,9 +404,8 @@ impl Board {
             }
 
             // General test for a check, this is could be improved but it's fast enough for now
-            let mut test_board = *self;
-            test_board.make_move(m);
-            if !test_board.is_in_check(Some(self.current_color_turn)) {
+            new_board.make_move(m);
+            if !new_board.is_in_check(Some(new_board.current_color_turn)) {
                 legal_moves.push(m);
             }
         }
