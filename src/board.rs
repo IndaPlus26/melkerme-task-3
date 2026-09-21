@@ -420,15 +420,6 @@ impl Board {
         piece::post_move_update(self, move_played);
     }
 
-    pub fn from_index_to_square(index: usize) -> String {
-        let file = index % 8;
-        let rank = index / 8;
-        format!(
-            "{}{}",
-            (file as u8 + b'A') as char,
-            (8 - rank as u8 + b'0') as char
-        )
-    }
     pub fn from_square_to_index(square: &str) -> usize {
         let file = square.chars().nth(0).unwrap() as usize - b'A' as usize;
         let rank = square.chars().nth(1).unwrap() as usize - b'0' as usize;

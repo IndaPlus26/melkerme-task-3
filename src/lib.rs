@@ -6,9 +6,7 @@ use board::Board;
 use r#move::Move;
 
 /// Enum for the game state.
-/// NOTE!!! The game state won't updated until **after** a move is made.
-/// Remember that you have to set the game state yourself using the return value of the make_move function.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum GameState {
     InProgress,
     Quiet,
@@ -49,7 +47,7 @@ pub struct Game {
 }
 
 impl Game {
-    /// Create a new game from the default starting position
+    /// Create a new game from the default chess starting position
     pub fn new() -> Self {
         Self {
             board: Board::create_default_position(),
@@ -72,15 +70,18 @@ impl Game {
         self.state
     }
 
-    /**
-     * Set the game state.
-     * @param state: The game state to set.
-     */
+    /// Set the game state
     pub fn set_game_state(&mut self, state: GameState) {
         self.state = state;
     }
 
     /// Get the current board state as a FEN string.
+    /// ```rust
+    /// use melkerme_task_3::Game;
+    /// let game = Game::new();
+    /// let fen = game.to_fen();
+    /// assert_eq!(fen, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    /// ```
     pub fn to_fen(&self) -> String {
         let mut fen = String::new();
         let mut empty_count = 0;
@@ -186,10 +187,7 @@ impl Game {
         fen
     }
 
-    /**
-     * Get the color of the current turn.
-     * @return: Color::White if the current turn is white, Color::Black if the current turn is black.
-     */
+    /// Get the color whose turn it is
     pub fn get_turn_color(&self) -> Color {
         if self.board.current_color_turn == piece::WHITE {
             Color::White
@@ -198,9 +196,7 @@ impl Game {
         }
     }
 
-    /**
-     * Change the turn color.
-     */
+    /// Flip the turn manually, should rarely be needed
     pub fn change_turn_color(&mut self) {
         self.board.current_color_turn = if self.board.current_color_turn == piece::WHITE {
             piece::BLACK
@@ -210,8 +206,8 @@ impl Game {
     }
 
     /**
-     * Get the current promotion piece.
-     * @return: The promotion piece as a Piece enum.
+     * Get the current promotion piece as Piece.
+     * Default is Piece::Queen.
      */
     pub fn get_promotion_piece(&self) -> Piece {
         match self.board.promotion_piece {
@@ -225,8 +221,6 @@ impl Game {
 
     /**
      * Set what piece will be promoted to.
-     * @param piece: The piece to set the promotion piece to. Use the Piece enum.
-     *
      * NOTE!!! This will have to be set before the move is played.
      * Make the user set the promotion piece before calling make_move().
      * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
@@ -254,13 +248,17 @@ impl Game {
     }
 
     /**
-     * Get the possible moves from a given square.
-     * @param piece_square: The `from` square of the piece to get the possible moves for. (e.g. "E4")
-     * @return: A vector of possible `to` squares as strings.
-     * example: get_possible_moves("E2") -> Some(vec!["E3", "E4"])
-     * example: get_possible_moves("E2") -> None (if there are no possible moves)
-     */
-    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> {
+    * Get the possible moves from a given square.
+    * ```rust
+    * use melkerme_task_3::Game;
+    * let game = Game::new();
+    * let moves = game.get_possible_moves(String::from("E2"));
+    * let no_moves = game.get_possible_moves(String::from("D4"));
+    * assert_eq!(moves, vec![String::from("E3"), String::from("E4")].into());
+    * assert_eq!(no_moves, None);
+    * ```
+    */
+    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> { 
         let piece_file = match piece_square.chars().nth(0) {
             Some(file) => {
                 if file < 'A' || file > 'H' {
@@ -317,13 +315,25 @@ impl Game {
         false
     }
 
-    /**
-     * Make a move on the board.
-     * @param from: The square to move from. (e.g. "E4")
-     * @param to: The square to move to. (e.g. "E5")
-     * @return: The new game state.
-     * NOTE!!! The new game state is not set automatically, you must set it manually after calling this function.
-     */
+    /// Make a move on the board.
+    /// ```rust
+    /// use melkerme_task_3::{Game, GameState};
+    /// let mut game = Game::new();
+    ///
+    /// let result = game.make_move(String::from("E2"), String::from("E4"));
+    /// assert!(result.is_some());
+    /// assert_eq!(result.unwrap(), GameState::Quiet);
+    ///
+    /// let old_board = game.to_fen();
+    /// assert_eq!(old_board, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    ///
+    /// let new_result = game.make_move(String::from("D5"), String::from("A8"));
+    /// assert!(new_result.is_none());
+    ///
+    /// // If you try to play an invalid move, nothing will happen
+    /// let new_board = game.to_fen();
+    /// assert_eq!(old_board, new_board);
+    /// ```
     pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> {
         let from_index = Board::from_square_to_index(&from);
         let to_index = Board::from_square_to_index(&to);
@@ -469,20 +479,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    #[test]
-    fn test_from_index_to_square() {
-        assert_eq!(Board::from_index_to_square(0), "A8");
-        assert_eq!(Board::from_index_to_square(1), "B8");
-        assert_eq!(Board::from_index_to_square(63), "H1");
-    }
-
-    #[test]
-    fn test_from_square_to_index() {
-        assert_eq!(Board::from_square_to_index("A8"), 0);
-        assert_eq!(Board::from_square_to_index("B8"), 1);
-        assert_eq!(Board::from_square_to_index("H1"), 63);
     }
 
     #[test]

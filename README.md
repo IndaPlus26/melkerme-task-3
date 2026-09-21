@@ -32,6 +32,7 @@ let mut game = Game::new();
 This will create a new game with the default chess starting position.
 
 ### Docs
+Full documentation can be found [here](index.html)
 
 ### Useful info
 * All possible chess moves are available: castling, promotion to all 4 pieces and en passant included. (Open an issue if you find a bug)
