@@ -317,6 +317,7 @@ impl Board {
         }
         Some(moves)
     }
+
     pub fn collect_legal_moves(
         &self,
         color: Option<u8>,
@@ -343,13 +344,13 @@ impl Board {
                     if new_board.get_square(63) != piece::create(piece::ROOK, piece::WHITE) {
                         continue;
                     }
-                    if !piece::is_empty(new_board.get_square(61))
-                        || !piece::is_empty(new_board.get_square(62))
+                    if !piece::is_empty(self.get_square(61))
+                        || !piece::is_empty(self.get_square(62))
                     {
                         continue;
                     }
-                    if new_board.is_square_controlled(61, piece::BLACK)
-                        || new_board.is_square_controlled(60, piece::BLACK)
+                    if self.is_square_controlled(61, piece::BLACK)
+                        || self.is_square_controlled(60, piece::BLACK)
                     {
                         continue;
                     }
@@ -385,6 +386,7 @@ impl Board {
                     }
                     if new_board.is_square_controlled(5, piece::WHITE)
                         || new_board.is_square_controlled(4, piece::WHITE)
+
                     {
                         continue;
                     }
@@ -448,6 +450,7 @@ impl Board {
 
         legal_moves
     }
+
     pub fn make_move(&mut self, move_played: Move) {
         self.set_square(move_played.to, self.get_square(move_played.from));
         self.set_square(move_played.from, 0);

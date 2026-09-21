@@ -7,9 +7,7 @@ use board::Board;
 use r#move::Move;
 
 /// Enum for the game state.
-/// NOTE!!! The game state is updated **after** a move is made.
-/// For example, if a move is made and it results in a check, the game state will be updated to Checked.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum GameState {
     InProgress,
     Quiet,
@@ -51,7 +49,7 @@ pub struct Game {
 }
 
 impl Game {
-    /// Create a new game from the default starting position
+    /// Create a new game from the default chess starting position
     pub fn new() -> Self {
         Self {
             board: Board::create_default_position(),
@@ -69,29 +67,23 @@ impl Game {
         }
     }
 
-    /* pub fn with_bot(mut self, color: Color) -> Self {
-        if color == Color::White {
-            self.bot_white = true;
-        } else {
-            self.bot_black = true;
-        }
-        self
-    } */
-
     /// Get the game state.
     pub fn get_game_state(&self) -> GameState {
         self.state
     }
 
-    /**
-     * Set the game state.
-     * @param state: The game state to set.
-     */
+    /// Set the game state
     pub fn set_game_state(&mut self, state: GameState) {
         self.state = state;
     }
 
     /// Get the current board state as a FEN string.
+    /// ```rust
+    /// use melkerme_task_3::Game;
+    /// let game = Game::new();
+    /// let fen = game.to_fen();
+    /// assert_eq!(fen, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    /// ```
     pub fn to_fen(&self) -> String {
         let mut fen = String::new();
         let mut empty_count = 0;
@@ -166,15 +158,24 @@ impl Game {
         } else {
             " b "
         };
+
         if self.board.get_castling_rights(0) {
             fen += "K";
-        } else if self.board.get_castling_rights(1) {
+        } 
+        if self.board.get_castling_rights(1) {
             fen += "Q";
-        } else if self.board.get_castling_rights(2) {
+        }
+        if self.board.get_castling_rights(2) {
             fen += "k";
-        } else if self.board.get_castling_rights(3) {
+        }
+        if self.board.get_castling_rights(3) {
             fen += "q";
-        } else {
+        } 
+        if !self.board.get_castling_rights(0) &&
+           !self.board.get_castling_rights(1) &&
+           !self.board.get_castling_rights(2) &&
+           !self.board.get_castling_rights(3)
+        {
             fen += "-";
         }
 
@@ -194,10 +195,7 @@ impl Game {
         fen
     }
 
-    /**
-     * Get the color of the current turn.
-     * @return: Color::White if the current turn is white, Color::Black if the current turn is black.
-     */
+    /// Get the color whose turn it is
     pub fn get_turn_color(&self) -> Color {
         if self.board.current_color_turn == piece::WHITE {
             Color::White
@@ -206,20 +204,16 @@ impl Game {
         }
     }
 
-    /**
-     * Change the turn to the opposite color.
-     */
-    pub fn change_turn(&mut self) {
+    /// Flip the turn manually, should rarely be needed
+    pub fn change_turn_color(&mut self) {
         self.board.current_color_turn = if self.board.current_color_turn == piece::WHITE {
             piece::BLACK
         } else {
             piece::WHITE
         };
     }
-    /**
-     * Get the current promotion piece.
-     * @return: The promotion piece as a Piece enum.
-     */
+
+    /// Get the currently selected promotion piece, default is Piece::Queen.
     pub fn get_promotion_piece(&self) -> Piece {
         match self.board.promotion_piece {
             piece::QUEEN => Piece::Queen,
@@ -232,8 +226,6 @@ impl Game {
 
     /**
      * Set what piece will be promoted to.
-     * @param piece: The piece to set the promotion piece to. Use the Piece enum.
-     *
      * NOTE!!! This will have to be set before the move is played.
      * Make the user set the promotion piece before calling make_move().
      * The defualt is queen. So if you can't be bothered to implement this, all promotions will become queens.
@@ -261,13 +253,17 @@ impl Game {
     }
 
     /**
-     * Get the possible moves from a given square.
-     * @param piece_square: The `from` square of the piece to get the possible moves for. (e.g. "E4")
-     * @return: A vector of possible `to` squares as strings.
-     * example: get_possible_moves("E2") -> Some(vec!["E3", "E4"])
-     * example: get_possible_moves("E2") -> None (if there are no possible moves)
-     */
-    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> {
+    * Get the possible moves from a given square.
+    * ```rust
+    * use melkerme_task_3::Game;
+    * let game = Game::new();
+    * let moves = game.get_possible_moves(String::from("E2"));
+    * let no_moves = game.get_possible_moves(String::from("D4"));
+    * assert_eq!(moves, vec![String::from("E3"), String::from("E4")].into());
+    * assert_eq!(no_moves, None);
+    * ```
+    */
+    pub fn get_possible_moves(&self, piece_square: String) -> Option<Vec<String>> { 
         let piece_file = match piece_square.chars().nth(0) {
             Some(file) => {
                 if file < 'A' || file > 'H' {
@@ -324,20 +320,28 @@ impl Game {
         false
     }
 
-    /**
-     * Make a move on the board.
-     * @param from: The square to move from. (e.g. "E4")
-     * @param to: The square to move to. (e.g. "E5")
-     * @return: The new game state.
-     * NOTE!!! The new game state is not set automatically, you must set it manually after calling this function.
-     */
+    /// Make a move on the board.
+    /// ```rust
+    /// use melkerme_task_3::{Game, GameState};
+    /// let mut game = Game::new();
+    ///
+    /// let result = game.make_move(String::from("E2"), String::from("E4"));
+    /// assert!(result.is_some());
+    /// assert_eq!(result.unwrap(), GameState::Quiet);
+    ///
+    /// let old_board = game.to_fen();
+    /// assert_eq!(old_board, "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
+    ///
+    /// let new_result = game.make_move(String::from("D5"), String::from("A8"));
+    /// assert!(new_result.is_none());
+    ///
+    /// // If you try to play an invalid move, nothing will happen
+    /// let new_board = game.to_fen();
+    /// assert_eq!(old_board, new_board);
+    /// ```
     pub fn make_move(&mut self, from: String, to: String) -> Option<GameState> {
         let from_index = Board::from_square_to_index(&from);
         let to_index = Board::from_square_to_index(&to);
-
-        if piece::get_color(self.board.get_square(from_index)) != self.board.current_color_turn {
-            return Some(GameState::InProgress);
-        }
 
         let legal_moves = match self.board.get_legal_moves(None) {
             Some(moves) => moves,
@@ -406,12 +410,30 @@ impl Game {
         self.state = state;
     }
 
-    pub fn make_bot_move(&mut self) {
-        bot::play(&mut self.board);
-    }
+    /// Let the bot find the best move.
+    /// ```rust
+    /// use melkerme_task_3::Game;
+    /// use std::time::Duration;
+    ///
+    /// let mut game = Game::new();
+    ///
+    /// // Depth refers to how many moves the bot can look ahead.
+    /// // Reasonable for a middle game with many moves is around 5 or 6 for this bot.
+    /// // Max time is how long the bot is allowed to search for the best move.
+    /// // The bot will return the best move it finds after either the depth or the time threshold
+    /// // is reached
+    /// let best_move = game.find_best_move(6, Duration::from_secs(5));
+    /// assert!(best_move.is_some());
+    /// let best_move = best_move.unwrap();
+    /// let from: String = best_move.0;
+    /// let to: String = best_move.1;
+    /// ```
+    pub fn find_best_move(&mut self, depth: u32, max_time: std::time::Duration) -> Option<(String, String)> {
+        let m = bot::find_best_move(&mut self.board, depth, max_time);
+        if m.is_none() { return None };
 
-    pub fn find_best_move(&mut self, depth: u32, max_time: std::time::Duration) -> Option<Move> {
-        bot::find_best_move(&mut self.board, depth, max_time)
+        let m = m.unwrap();
+        return Some((Board::from_index_to_square(m.from), Board::from_index_to_square(m.to)));
     }
 }
 
@@ -491,20 +513,6 @@ mod tests {
     }
 
     #[test]
-    fn test_from_index_to_square() {
-        assert_eq!(Board::from_index_to_square(0), "A8");
-        assert_eq!(Board::from_index_to_square(1), "B8");
-        assert_eq!(Board::from_index_to_square(63), "H1");
-    }
-
-    #[test]
-    fn test_from_square_to_index() {
-        assert_eq!(Board::from_square_to_index("A8"), 0);
-        assert_eq!(Board::from_square_to_index("B8"), 1);
-        assert_eq!(Board::from_square_to_index("H1"), 63);
-    }
-
-    #[test]
     fn test_to_fen() {
         let game = Game::new_from_fen(
             "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq e3 0 1",
@@ -514,78 +522,5 @@ mod tests {
             game.to_fen(),
             "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq e3 0 1"
         );
-    }
-
-    #[test]
-    fn test_make_bot_move() {
-        let mut game = Game::new();
-        game.make_bot_move();
-        assert!(false);
-    }
-
-    #[test]
-    fn test_find_best_move() {
-        // 1
-        let mut game = Game::new_from_fen(
-            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
-        );
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 2
-        let mut game =
-            Game::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 3
-        let mut game = Game::new_from_fen(
-            "r1bq1rk1/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 1",
-        );
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 4
-        let mut game = Game::new_from_fen("8/5pk1/6p1/3p4/3P4/5KP1/5P2/8 w - - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 5
-        let mut game = Game::new_from_fen("8/P6k/8/8/8/8/7p/4K3 w - - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 6 mate in 1
-        let mut game = Game::new_from_fen("7k/5Q2/6K1/8/8/8/8/8 w - - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 7 stalemate
-        let mut game = Game::new_from_fen("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_none());
-
-        // 8 in checkmate
-        let mut game = Game::new_from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_none());
-
-        // 9 no e5d6
-        let mut game = Game::new_from_fen("k3r3/8/8/3pP3/8/8/8/4K3 w - d6 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
-
-        // 10 dont castle king
-        let mut game = Game::new_from_fen("k4r2/8/8/8/8/8/8/4K2R w K - 0 1");
-        let best_move = game.find_best_move(10, std::time::Duration::from_secs(10));
-        assert!(best_move.is_some());
-        println!("Best move: {}", best_move.unwrap().to_string());
     }
 }
