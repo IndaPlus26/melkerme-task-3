@@ -33,6 +33,16 @@ This will create a new game with the default chess starting position.
 
 ### Docs
 Full documentation can be found [here](index.html)
+Edit: This index.html page doesn't really work, but you can always generate the docs yourself in a cloned repo using:
+```cargo doc```
+
+### Tests
+If you want to run the tests you should probably do so in a **release** configuration:
+```cargo test --release```
+In release mode the tests take ~10 seconds to complete on my machine and in normal debug mode it's over a minute.
+One of the tests will generate all possible legal moves in 5 different specialised positions with a lot of tricky moves up to a depth of 5.
+By comparing my number of possible moves with the correct number of moves found by people online (and stockfish) I can almost guarantee that all functions in the move generation function correctly. 
+The reason it takes so long is because it searches ~300 million moves.
 
 ### Useful info
 * All possible chess moves are available: castling, promotion to all 4 pieces and en passant included. (Open an issue if you find a bug)
