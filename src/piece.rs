@@ -99,6 +99,8 @@ pub fn post_move_update(board: &mut Board, move_played: Move) {
         if move_played.is_promotion() {
             board.set_square(move_played.to, create(move_played.get_promotion_piece(), get_color(piece)));
         }
+
+        board.halfmove = 0;
     }
 
     if move_played.is_capture() {
@@ -115,5 +117,7 @@ pub fn post_move_update(board: &mut Board, move_played: Move) {
         if move_played.to == 63 {
             board.set_castling_rights(crate::board::CASTLING_RIGHTS_BLACK_KING_SIDE, false);
         }
+
+        board.halfmove = 0;
     }
 }

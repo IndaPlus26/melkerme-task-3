@@ -309,7 +309,7 @@ impl Game {
         if repetition_count >= 3 {
             return true;
         }
-        if self.board.halfmove >= 50 {
+        if self.board.halfmove >= 100 {
             return true;
         }
         false

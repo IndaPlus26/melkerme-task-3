@@ -417,6 +417,10 @@ impl Board {
         self.swap_current_turn_color();
 
         self.set_en_passant_square(64);
+        self.halfmove += 1;
+        if self.current_color_turn == piece::WHITE {
+            self.fullmove += 1;
+        }
         piece::post_move_update(self, move_played);
     }
 
