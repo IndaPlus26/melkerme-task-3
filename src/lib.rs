@@ -296,6 +296,13 @@ impl Game {
         return Some(possible_moves);
     }
 
+    pub fn is_promotion_move(&mut self, from: String, to: String) -> bool {
+        let Some(moves) = self.board.get_legal_moves() else { return false; };
+        moves.iter().any(|m| {
+            m.to_string() == format!("{from}{to}") && m.is_promotion()
+        })
+    }
+
     fn check_draw(&mut self) -> bool {
         let mut repetition_count = 0;
         for i in 0..self.history.len() {
